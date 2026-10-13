@@ -16,7 +16,7 @@ export function LanguageSwitcher({ persist = true, className }: { persist?: bool
       {LOCALES.map((l) => (
         <button key={l.id} role="radio" aria-checked={locale === l.id} onClick={() => changeLocale(l.id, persist)}
           className={cn("flex items-center gap-1.5 rounded-md px-2.5 h-7 text-[13px] font-medium", locale === l.id ? "bg-surface text-text shadow-soft" : "text-muted hover:text-text")}>
-          <span aria-hidden>{l.flag}</span>{l.id === "en" ? "EN" : "UA"}
+          {l.id === "en" ? "EN" : "UA"}
         </button>
       ))}
     </div>

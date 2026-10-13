@@ -1,52 +1,102 @@
 "use client";
-import { useEffect, useState } from "react";
-import { initLocale, tr, useLocale } from "@/lib/i18n";
-import { Logo } from "@/components/layout/logo";
-import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import "@fontsource-variable/onest";
+import "@/components/landing/landing.css";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { initLocale, tr, useLocale, type Locale } from "@/lib/i18n";
+import { changeLocale } from "@/components/layout/language-switcher";
+import { COPY } from "@/components/landing/i18n";
+import { LandingCtx, Logo } from "@/components/landing/ui";
+import { H, ThoughtMap, W } from "@/components/landing/thought-map";
 import { AuthForm } from "./auth-form";
 
-/** Auth pages are rendered client-side so the saved/browser language applies immediately. */
+function LangPills() {
+  const locale = useLocale();
+  return (
+    <div role="radiogroup" aria-label="Language / Мова" className="inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] p-[3px] text-[12px] font-semibold">
+      {(["en", "uk"] as Locale[]).map((l) => (
+        <button key={l} role="radio" aria-checked={locale === l} onClick={() => changeLocale(l, false)}
+          className={`h-7 rounded-full px-2.5 transition-colors ${locale === l ? "bg-[var(--brand-tint)] text-[var(--brand)]" : "text-[var(--text-soft)] hover:text-[var(--text)]"}`}>
+          {l === "en" ? "EN" : "UA"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The landing page's thought map, scaled to the showcase panel. */
+function MapShowcase() {
+  const locale = useLocale();
+  const wrap = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.6);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setScale(e.contentRect.width / W));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const ctx = useMemo(() => ({ lang: locale, setLang: () => {}, t: COPY[locale], openVideo: () => {}, signedIn: false }), [locale]);
+  return (
+    <LandingCtx.Provider value={ctx}>
+      <div className="l-shadow overflow-hidden rounded-[20px] border border-[var(--border)] bg-white">
+        <div className="flex h-8 items-center gap-2.5 border-b border-[var(--border)] bg-[var(--surface-2)] px-3.5">
+          <span className="flex gap-1.5" aria-hidden>{[0, 1, 2].map((i) => <span key={i} className="size-[8px] rounded-full bg-[#E2DDD3]" />)}</span>
+          <span className="text-[11.5px] text-[var(--text-soft)]">{COPY[locale].map.url}</span>
+        </div>
+        <div ref={wrap} className="is-in relative" style={{ height: H * scale }} aria-hidden>
+          <div className="absolute left-0 top-0 origin-top-left" style={{ width: W, height: H, transform: `scale(${scale})` }}><ThoughtMap /></div>
+        </div>
+      </div>
+    </LandingCtx.Provider>
+  );
+}
+
+/** Auth pages share the landing's look; rendered client-side so the saved/browser language applies immediately. */
 export function AuthChrome({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { initLocale(null); setReady(true); }, []);
   const locale = useLocale();
-  if (!ready) return <div className="min-h-screen" />;
+  if (!ready) return <div className="landing min-h-dvh" />;
+  const steps = [tr("Thoughts"), tr("Connections"), tr("Plans"), tr("Progress")];
   return (
-    <div key={locale} className="min-h-screen grid lg:grid-cols-[1fr_1.1fr]">
-      <div className="flex flex-col px-6 py-8 sm:px-12">
+    <div key={locale} className="landing auth-scope grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
+      <div className="flex flex-col px-5 py-6 sm:px-10 lg:px-14">
         <div className="flex items-center justify-between gap-3">
-          <Logo />
-          <LanguageSwitcher persist={false} />
+          <Link href="/" aria-label={tr("Nodera home page")}><Logo /></Link>
+          <LangPills />
         </div>
-        <div className="flex-1 flex items-center">
-          <div className="w-full max-w-sm mx-auto py-10">{children}</div>
+        <div className="flex flex-1 items-center">
+          <div className="mx-auto w-full max-w-[400px] py-12">{children}</div>
         </div>
-        <p className="text-xs text-muted">{tr("Your data stays private to your workspace. Export it any time.")}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-[var(--text-soft)]">
+          <p className="flex items-center gap-1.5">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" /></svg>
+            {tr("Your data stays private to your workspace. Export it any time.")}
+          </p>
+          <Link href="/" className="font-medium hover:text-[var(--text)]">← {tr("Back to home")}</Link>
+        </div>
       </div>
-      <div className="hidden lg:flex relative overflow-hidden bg-[#111118] text-white p-12 flex-col justify-between">
-        <svg className="absolute inset-0 w-full h-full opacity-60" viewBox="0 0 600 700" preserveAspectRatio="xMidYMid slice" aria-hidden>
-          <defs>
-            <radialGradient id="g" cx="50%" cy="40%" r="60%"><stop offset="0" stopColor="#5b5bd6" stopOpacity=".35" /><stop offset="1" stopColor="#111118" stopOpacity="0" /></radialGradient>
-          </defs>
-          <rect width="600" height="700" fill="url(#g)" />
-          <g stroke="#7c7cf0" strokeOpacity=".45" strokeWidth="1.5" fill="none">
-            <path d="M300 250 C 200 300, 160 360, 140 420" /><path d="M300 250 C 400 300, 440 360, 460 420" /><path d="M300 250 L 300 470" />
-            <path d="M140 420 C 180 500, 260 520, 300 470" strokeDasharray="5 6" /><path d="M460 420 C 430 520, 340 540, 300 470" strokeDasharray="5 6" />
-            <path d="M300 470 L 300 590" />
-          </g>
-          {[[300, 250, "#7c7cf0"], [140, 420, "#10b981"], [460, 420, "#f59e0b"], [300, 470, "#3b82f6"], [300, 590, "#ec4899"]].map(([x, y, c], i) => (
-            <circle key={i} cx={x as number} cy={y as number} r="9" fill={c as string} />
-          ))}
-        </svg>
-        <div className="relative" />
-        <div className="relative max-w-md">
-          <h2 className="text-3xl font-semibold tracking-tight leading-tight">{tr("Turn scattered thoughts into connected plans.")}</h2>
-          <p className="mt-4 text-white/70 leading-relaxed">{tr("Capture ideas, see how the areas of your life influence each other, and turn what matters into goals, tasks and measurable progress.")}</p>
-          <div className="mt-8 flex gap-6 text-sm text-white/60">
-            <span>{tr("Thoughts")}</span><span>→ {tr("Connections")}</span><span>→ {tr("Plans")}</span><span>→ {tr("Progress")}</span>
+
+      <aside className="relative hidden overflow-hidden p-3 lg:block" aria-label={tr("About Nodera")}>
+        <div className="flex h-full flex-col justify-center gap-10 rounded-[28px] px-12 py-12 xl:px-16" style={{ background: "linear-gradient(160deg, #F1EEF7 0%, #ECEAF4 55%, #F3EFE6 100%)" }}>
+          <MapShowcase />
+          <div>
+            <p className="l-kicker">{tr("Your second brain")}</p>
+            <h2 className="mt-3 max-w-[540px] text-[clamp(28px,2.6vw,38px)] leading-[1.12] tracking-[-1px]">
+              {tr("Turn scattered thoughts into")} <span className="l-grad">{tr("connected plans")}</span>.
+            </h2>
+            <ol className="mt-7 grid max-w-[560px] grid-cols-4 gap-3 border-t border-[#D9D5E8] pt-5">
+              {steps.map((s, i) => (
+                <li key={s}>
+                  <p className="text-[11.5px] font-medium tabular-nums text-[var(--text-soft)]">0{i + 1}</p>
+                  <p className="mt-1 text-[14px] font-semibold">{s}</p>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
@@ -54,8 +104,12 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
 export function AuthPage({ mode }: { mode: "login" | "register" }) {
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">{tr(mode === "login" ? "Welcome back" : "Create your Nodera")}</h1>
-      <p className="mt-1 mb-7 text-sm text-muted">{tr(mode === "login" ? "Sign in to continue to your second brain." : "A private space for your thoughts, goals and plans.")}</p>
+      <nav aria-label={tr("Sign in or sign up")} className="mb-8 grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 text-[14px] font-semibold">
+        <Link href="/login" aria-current={mode === "login" ? "page" : undefined} className={`grid h-10 place-items-center rounded-full transition-colors ${mode === "login" ? "bg-[var(--text)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}>{tr("Log in")}</Link>
+        <Link href="/register" aria-current={mode === "register" ? "page" : undefined} className={`grid h-10 place-items-center rounded-full transition-colors ${mode === "register" ? "bg-[var(--text)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}>{tr("Sign up")}</Link>
+      </nav>
+      <h1 className="text-[clamp(26px,3vw,32px)] leading-[1.15] tracking-[-0.8px]">{tr(mode === "login" ? "Welcome back" : "Create your Nodera")}</h1>
+      <p className="mb-8 mt-2.5 text-[15.5px] leading-relaxed text-[var(--text-muted)]">{tr(mode === "login" ? "Sign in to continue to your second brain." : "A private space for your thoughts, goals and plans.")}</p>
       <AuthForm mode={mode} />
     </>
   );

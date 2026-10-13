@@ -1024,5 +1024,22 @@ export const uk: Record<string, string> = {
  "# task done in this branch|# tasks done in this branch": "# задачу в цій гілці виконано|# задачі в цій гілці виконано|# задач у цій гілці виконано",
  "Overdue # day|Overdue # days": "Прострочено # день|Прострочено # дні|Прострочено # днів",
  "day|days": "день|дні|днів",
- "task done|tasks done": "задачу виконано|задачі виконано|задач виконано"
+ "task done|tasks done": "задачу виконано|задачі виконано|задач виконано",
+ "Nodera home page": "Головна сторінка Nodera",
+ "Back to home": "На головну",
+ "About Nodera": "Про Nodera",
+ "Your second brain": "Ваш другий мозок",
+ "Turn scattered thoughts into": "Перетворюйте розрізнені думки на",
+ "connected plans": "пов'язані плани",
+ "Sign in or sign up": "Вхід або реєстрація",
+ "Log in": "Вхід",
+ "Sign up": "Реєстрація",
+ "Weak": "Слабкий",
+ "Okay": "Непоганий",
+ "Good": "Добрий",
+ "Strong": "Надійний",
+ "Show what you typed": "Показати введене",
+ "No card needed": "Без картки",
+ "Only you see your data": "Дані бачите лише ви",
+ "Export anytime": "Експорт будь-коли"
 };
