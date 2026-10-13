@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { api } from "@/lib/client/api";
@@ -14,11 +15,15 @@ import { CommandPalette } from "./command-palette";
 import { CreateDialogs } from "@/components/forms/create-dialogs";
 import { Onboarding } from "./onboarding";
 import { TaskDrawer } from "@/components/tasks/task-drawer";
+import { TourButton, TourOverlay } from "@/components/tour/tour";
 import { cn } from "@/lib/utils";
+import { initLocale, useLocale } from "@/lib/i18n";
 
-export type ShellUser = { id: string; name: string; email: string; theme: string };
+export type ShellUser = { id: string; name: string; email: string; theme: string; locale: string };
 
 export function AppShell({ user, children }: { user: ShellUser; children: React.ReactNode }) {
+  useState(() => initLocale(user.locale));
+  const locale = useLocale();
   const { id: wsId, set: setWs } = useWorkspace();
   const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,12 +55,12 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
 
   const fullBleed = /^\/(maps|graph)\/?[^/]*$/.test(pathname) && pathname !== "/maps";
 
-  if (error) return <div className="grid h-screen place-items-center text-sm text-danger">Could not load your workspace: {error}</div>;
+  if (error) return <div className="grid h-screen place-items-center text-sm text-danger">{tr("Could not load your workspace:")}{" "}{error}</div>;
   if (!workspaces || !wsId) return <div className="grid h-screen place-items-center"><Spinner className="size-7" /></div>;
 
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:m-2 focus:rounded focus:bg-surface focus:p-2">Skip to content</a>
+    <div key={locale} className="flex h-dvh overflow-hidden">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:m-2 focus:rounded focus:bg-surface focus:p-2">{tr("Skip to content")}</a>
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden animate-fade-in" onClick={() => setSidebar(false)} />}
       <Sidebar workspaces={workspaces} onWorkspacesChange={setWorkspaces} className={cn("fixed inset-y-0 left-0 z-40 transition-transform lg:static lg:translate-x-0", sidebarOpen ? "translate-x-0" : "-translate-x-full")} />
       <div className="flex min-w-0 flex-1 flex-col">
@@ -70,6 +75,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       <TaskDrawer />
       <Onboarding />
       <ConfirmHost />
+      <TourButton />
+      <TourOverlay />
       <Toaster />
     </div>
   );

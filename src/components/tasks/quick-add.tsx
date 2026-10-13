@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { invalidate, post } from "@/lib/client/api";
@@ -34,9 +35,9 @@ export function QuickAddTask({ defaults, onAdded, placeholder = "Add a task… (
     } catch (e) { toast.error(e); } finally { setBusy(false); }
   };
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-dashed border-border-strong bg-surface px-3 focus-within:border-accent focus-within:border-solid">
+    <div data-tour="tasks-quickadd" className="flex items-center gap-2 rounded-xl border border-dashed border-border-strong bg-surface px-3 focus-within:border-accent focus-within:border-solid">
       <Plus className="size-4 text-muted" />
-      <input value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} disabled={busy} placeholder={placeholder} aria-label="Add a task"
+      <input value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} disabled={busy} placeholder={tr(placeholder)} aria-label={tr("Add a task")}
         className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-muted" />
     </div>
   );

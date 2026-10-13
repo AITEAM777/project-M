@@ -12,8 +12,9 @@ export const POST = route(async (req) => {
   if (exists) throw new HttpError(409, "An account with this email already exists");
   const passwordHash = await hashPassword(body.password);
   const user = await prisma.$transaction(async (tx) => {
-    const u = await tx.user.create({ data: { email: body.email, name: body.name, passwordHash } });
-    await bootstrapWorkspace(tx, u.id);
+    const locale = body.locale ?? "en";
+    const u = await tx.user.create({ data: { email: body.email, name: body.name, passwordHash, locale } });
+    await bootstrapWorkspace(tx, u.id, undefined, locale);
     return u;
   });
   await createSession(user.id, req.headers.get("user-agent"));

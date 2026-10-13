@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
@@ -41,7 +42,7 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
   const [ms, setMs] = useState("");
   const [ai, setAi] = useState<AiSuggestion | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
-  if (error) return <p className="py-20 text-center text-sm text-muted">Goal not found. <Link href="/goals" className="text-accent">Back</Link></p>;
+  if (error) return <p className="py-20 text-center text-sm text-muted">{tr("Goal not found.")}{" "}<Link href="/goals" className="text-accent">{tr("Back")}</Link></p>;
   if (!data) return <PageSkeleton />;
   const g = data.goal;
   const refresh = () => { mutate(); invalidate("/api/goals", "/api/dashboard"); };
@@ -55,7 +56,7 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <>
-      <Button variant="ghost" size="sm" className="-ml-2 mb-3" onClick={() => router.push("/goals")}><ArrowLeft className="size-4" /> Goals</Button>
+      <Button variant="ghost" size="sm" className="-ml-2 mb-3" onClick={() => router.push("/goals")}><ArrowLeft className="size-4" />{" "}{tr("Goals")}</Button>
       <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-start">
         <ProgressRing value={g.progress} size={88} stroke={8} />
         <div className="min-w-0 flex-1">
@@ -67,27 +68,27 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
           </div>
           {g.description && <p className="mt-1.5 max-w-3xl whitespace-pre-line text-sm text-text-2">{g.description}</p>}
           <p className="mt-2 text-sm text-muted">
-            {g.startDate && <>Started {relDay(g.startDate)} · </>}
-            {g.targetDate ? <>Target {relDay(g.targetDate)}</> : "No target date"} ·{" "}
-            {g.autoProgress ? `Progress from ${g.milestones.length} milestones + ${g.taskCount} tasks` : "Manual progress"}
+            {g.startDate && <>{tr("Started")}{" "}{relDay(g.startDate)} · </>}
+            {g.targetDate ? <>{tr("Target")}{" "}{relDay(g.targetDate)}</> : tr("No target date")} ·{" "}
+            {g.autoProgress ? tr("Progress from {m} milestones + {t} tasks", { m: g.milestones.length, t: g.taskCount }) : tr("Manual progress")}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {aiOn && <Button size="sm" variant="soft" loading={aiBusy} onClick={breakdown}>{!aiBusy && <Sparkles className="size-4" />} Break down</Button>}
-          <PlaceOnMap type="goal" id={g.id} label="Visualize" />
-          <Button size="sm" onClick={() => setEditing(true)}><Pencil className="size-3.5" /> Edit</Button>
-          <Popover align="end" trigger={({ toggle }) => <Button size="icon-sm" variant="ghost" onClick={toggle} aria-label="More"><MoreHorizontal className="size-4" /></Button>}>
+        <div data-tour="goal-actions" className="flex flex-wrap gap-2">
+          {aiOn && <Button size="sm" variant="soft" loading={aiBusy} onClick={breakdown}>{!aiBusy && <Sparkles className="size-4" />}{" "}{tr("Break down")}</Button>}
+          <PlaceOnMap type="goal" id={g.id} label={tr("Visualize")} />
+          <Button size="sm" onClick={() => setEditing(true)}><Pencil className="size-3.5" />{" "}{tr("Edit")}</Button>
+          <Popover align="end" trigger={({ toggle }) => <Button size="icon-sm" variant="ghost" onClick={toggle} aria-label={tr("More")}><MoreHorizontal className="size-4" /></Button>}>
             {(close) => (
               <>
-                {g.status !== "COMPLETED" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "COMPLETED" }), "Goal achieved! 🎉"); }}>Mark as achieved</MenuItem>}
-                {g.status !== "ON_HOLD" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "ON_HOLD" }), "Put on hold"); }}>Put on hold</MenuItem>}
-                {g.status !== "ACTIVE" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "ACTIVE" }), "Reactivated"); }}>Mark as active</MenuItem>}
+                {g.status !== "COMPLETED" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "COMPLETED" }), "Goal achieved! 🎉"); }}>{tr("Mark as achieved")}</MenuItem>}
+                {g.status !== "ON_HOLD" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "ON_HOLD" }), "Put on hold"); }}>{tr("Put on hold")}</MenuItem>}
+                {g.status !== "ACTIVE" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "ACTIVE" }), "Reactivated"); }}>{tr("Mark as active")}</MenuItem>}
                 <MenuSeparator />
                 <MenuItem icon={<Trash2 />} danger onClick={async () => {
                   close();
-                  if (!(await confirm({ title: `Delete goal “${g.title}”?`, body: "Milestones are deleted. Tasks, projects and habits linked to it are kept but unlinked.", confirmLabel: "Delete goal", danger: true }))) return;
-                  try { await del(`/api/goals/${g.id}`); invalidate("/api/goals", "/api/dashboard"); router.push("/goals"); toast.success("Goal deleted"); } catch (e) { toast.error(e); }
-                }}>Delete goal</MenuItem>
+                  if (!(await confirm({ title: tr("Delete goal “{title}”?", { title: g.title }), body: tr("Milestones are deleted. Tasks, projects and habits linked to it are kept but unlinked."), confirmLabel: tr("Delete goal"), danger: true }))) return;
+                  try { await del(`/api/goals/${g.id}`); invalidate("/api/goals", "/api/dashboard"); router.push("/goals"); toast.success(tr("Goal deleted")); } catch (e) { toast.error(e); }
+                }}>{tr("Delete goal")}</MenuItem>
               </>
             )}
           </Popover>
@@ -98,35 +99,35 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
-          <Card className="p-4">
+          <Card data-tour="goal-milestones" className="p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Milestones <span className="font-normal text-muted">{g.milestones.filter((m) => m.done).length}/{g.milestones.length}</span></h2>
+              <h2 className="text-sm font-semibold">{tr("Milestones")}{" "}<span className="font-normal text-muted">{g.milestones.filter((m) => m.done).length}/{g.milestones.length}</span></h2>
             </div>
             <ol className="space-y-1">
               {g.milestones.map((m, i) => (
                 <li key={m.id} className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
                   <GripVertical className="size-3.5 text-muted opacity-0 group-hover:opacity-60" />
-                  <Checkbox checked={m.done} label={m.title} onChange={(done) => run(() => patch(`/api/milestones/${m.id}`, { done }), done ? `Milestone reached: ${m.title}` : undefined)} />
+                  <Checkbox checked={m.done} label={m.title} onChange={(done) => run(() => patch(`/api/milestones/${m.id}`, { done }), done ? tr("Milestone reached: {title}", { title: m.title }) : undefined)} />
                   <span className={`flex-1 text-sm ${m.done ? "text-muted line-through" : ""}`}><span className="mr-1.5 text-xs text-muted tabular">{i + 1}.</span>{m.title}</span>
                   {m.dueDate && <span className="text-xs text-muted">{relDay(m.dueDate)}</span>}
-                  <button aria-label="Delete milestone" className="text-muted opacity-0 hover:text-danger group-hover:opacity-100" onClick={async () => {
-                    if (await confirm({ title: "Delete milestone?", body: m.title, confirmLabel: "Delete", danger: true })) run(() => del(`/api/milestones/${m.id}`));
+                  <button aria-label={tr("Delete milestone")} className="text-muted opacity-0 hover:text-danger group-hover:opacity-100" onClick={async () => {
+                    if (await confirm({ title: tr("Delete milestone?"), body: m.title, confirmLabel: tr("Delete"), danger: true })) run(() => del(`/api/milestones/${m.id}`));
                   }}><X className="size-3.5" /></button>
                 </li>
               ))}
             </ol>
             <div className="mt-2 flex gap-2">
-              <Input value={ms} onChange={(e) => setMs(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addMilestone()} placeholder="Add a milestone…" className="h-8" />
+              <Input value={ms} onChange={(e) => setMs(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addMilestone()} placeholder={tr("Add a milestone…")} className="h-8" />
               <Button size="sm" onClick={addMilestone} disabled={!ms.trim()}><Plus className="size-4" /></Button>
             </div>
           </Card>
 
-          <Card className="p-4">
-            <h2 className="mb-3 text-sm font-semibold">Tasks <span className="font-normal text-muted">{g.doneTaskCount}/{g.taskCount}</span></h2>
-            <QuickAddTask defaults={{ goalId: g.id }} onAdded={() => mutate()} placeholder="Add a task for this goal…" />
+          <Card data-tour="goal-tasks" className="p-4">
+            <h2 className="mb-3 text-sm font-semibold">{tr("Tasks")}{" "}<span className="font-normal text-muted">{g.doneTaskCount}/{g.taskCount}</span></h2>
+            <QuickAddTask defaults={{ goalId: g.id }} onAdded={() => mutate()} placeholder={tr("Add a task for this goal…")} />
             <div className="-mx-2 mt-2">
               {data.tasks.map((t) => <TaskRow key={t.id} task={t} onChanged={() => mutate()} />)}
-              {!data.tasks.length && <p className="px-2 py-3 text-sm text-muted">Daily actions connect to this goal here. Add tasks directly or via linked projects.</p>}
+              {!data.tasks.length && <p className="px-2 py-3 text-sm text-muted">{tr("Daily actions connect to this goal here. Add tasks directly or via linked projects.")}</p>}
             </div>
           </Card>
         </div>
@@ -134,54 +135,54 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
         <div className="space-y-5">
           {(g.motivation || g.successCriteria) && (
             <Card className="space-y-3 p-4 text-sm">
-              {g.motivation && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted">Why it matters</p><p className="mt-1 whitespace-pre-line">{g.motivation}</p></div>}
-              {g.successCriteria && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted">Success looks like</p><p className="mt-1 whitespace-pre-line">{g.successCriteria}</p></div>}
+              {g.motivation && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted">{tr("Why it matters")}</p><p className="mt-1 whitespace-pre-line">{g.motivation}</p></div>}
+              {g.successCriteria && <div><p className="text-xs font-semibold uppercase tracking-wide text-muted">{tr("Success looks like")}</p><p className="mt-1 whitespace-pre-line">{g.successCriteria}</p></div>}
             </Card>
           )}
-          <Card className="space-y-4 p-4 text-sm">
-            <Side title="Projects" action={<button className="text-xs text-accent" onClick={() => openCreate("project", { goalId: g.id })}>+ New</button>}>
+          <Card data-tour="goal-side" className="space-y-4 p-4 text-sm">
+            <Side title={tr("Projects")} action={<button className="text-xs text-accent" onClick={() => openCreate("project", { goalId: g.id })}>{tr("+ New")}</button>}>
               {g.projects.map((p) => (
                 <Link key={p.id} href={`/projects/${p.id}`} className="flex items-center gap-2 py-0.5 hover:underline">
                   <FolderTree className="size-3.5" style={{ color: p.color }} /><span className="flex-1 truncate">{p.title}</span><span className="text-xs text-muted">{p.doneCount}/{p.taskCount}</span>
                 </Link>
               ))}
-              {!g.projects.length && <Empty>No projects yet.</Empty>}
+              {!g.projects.length && <Empty>{tr("No projects yet.")}</Empty>}
             </Side>
-            <Side title="Supporting habits" action={<button className="text-xs text-accent" onClick={() => openCreate("habit", { goalId: g.id })}>+ New</button>}>
+            <Side title={tr("Supporting habits")} action={<button className="text-xs text-accent" onClick={() => openCreate("habit", { goalId: g.id })}>{tr("+ New")}</button>}>
               {g.habits.map((h) => <Link key={h.id} href="/habits" className="flex items-center gap-2 py-0.5 hover:underline"><Repeat className="size-3.5 text-muted" />{h.icon} {h.title}</Link>)}
-              {!g.habits.length && <Empty>No habits linked.</Empty>}
+              {!g.habits.length && <Empty>{tr("No habits linked.")}</Empty>}
             </Side>
-            <Side title="Scheduled activities">
+            <Side title={tr("Scheduled activities")}>
               {data.events.map((e) => <p key={e.id} className="flex items-center gap-2 py-0.5"><CalendarClock className="size-3.5 text-muted" /><span className="flex-1 truncate">{e.title}</span><span className="text-xs text-muted">{e.recurrence !== "NONE" ? e.recurrence.toLowerCase() : relDay(e.start)} {time(e.start)}</span></p>)}
-              {!data.events.length && <Empty>Link calendar events to this goal to see time invested.</Empty>}
+              {!data.events.length && <Empty>{tr("Link calendar events to this goal to see time invested.")}</Empty>}
             </Side>
-            <Side title="Depends on">
+            <Side title={tr("Depends on")}>
               {data.dependsOn.map((d) => (
                 <div key={d.id} className="flex items-center gap-2 py-0.5">
                   <Link href={`/goals/${d.id}`} className="flex-1 truncate hover:underline">{d.status === "COMPLETED" ? "✓" : "○"} {d.title}</Link>
-                  <button aria-label="Remove dependency" className="text-muted hover:text-danger" onClick={() => run(() => patch(`/api/goals/${g.id}`, { dependsOn: data.dependsOn.filter((x) => x.id !== d.id).map((x) => x.id) }))}><X className="size-3.5" /></button>
+                  <button aria-label={tr("Remove dependency")} className="text-muted hover:text-danger" onClick={() => run(() => patch(`/api/goals/${g.id}`, { dependsOn: data.dependsOn.filter((x) => x.id !== d.id).map((x) => x.id) }))}><X className="size-3.5" /></button>
                 </div>
               ))}
-              <Select className="mt-1 h-8" value="" onChange={(e) => e.target.value && run(() => patch(`/api/goals/${g.id}`, { dependsOn: [...data.dependsOn.map((x) => x.id), e.target.value] }))} aria-label="Add goal dependency">
-                <option value="">+ Add dependency…</option>
+              <Select className="mt-1 h-8" value="" onChange={(e) => e.target.value && run(() => patch(`/api/goals/${g.id}`, { dependsOn: [...data.dependsOn.map((x) => x.id), e.target.value] }))} aria-label={tr("Add goal dependency")}>
+                <option value="">{tr("+ Add dependency…")}</option>
                 {allGoals?.goals.filter((x) => x.id !== g.id && !data.dependsOn.some((d) => d.id === x.id)).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
               </Select>
-              {data.dependents.length > 0 && <p className="mt-1.5 text-xs text-muted">Enables: {data.dependents.map((d) => d.title).join(", ")}</p>}
+              {data.dependents.length > 0 && <p className="mt-1.5 text-xs text-muted">{tr("Enables:")}{" "}{data.dependents.map((d) => d.title).join(", ")}</p>}
             </Side>
-            <Side title="Connected thoughts">
+            <Side title={tr("Connected thoughts")}>
               {data.connected.map((c, i) => (
                 <Link key={i} href={`/maps/${c.node.mapId}?node=${c.node.id}`} className="flex items-center gap-2 py-0.5 hover:underline">
                   <span className="text-[11px] font-medium" style={{ color: RELATION_META[c.relation].color }}>{RELATION_META[c.relation].label}</span>
-                  <span className="truncate">{c.node.title || "Untitled"}</span>
+                  <span className="truncate">{c.node.title || tr("Untitled")}</span>
                 </Link>
               ))}
-              {data.nodes.map((n) => <Link key={n.id} href={`/maps/${n.mapId}?node=${n.id}`} className="flex items-center gap-2 py-0.5 text-accent hover:underline"><Workflow className="size-3.5" />On “{n.map.title}”</Link>)}
-              {!data.connected.length && !data.nodes.length && <Empty>Place this goal on a mind map to connect it with thoughts and other goals.</Empty>}
+              {data.nodes.map((n) => <Link key={n.id} href={`/maps/${n.mapId}?node=${n.id}`} className="flex items-center gap-2 py-0.5 text-accent hover:underline"><Workflow className="size-3.5" />{tr("On “{title}”", { title: n.map.title })}</Link>)}
+              {!data.connected.length && !data.nodes.length && <Empty>{tr("Place this goal on a mind map to connect it with thoughts and other goals.")}</Empty>}
             </Side>
           </Card>
         </div>
       </div>
-      <Dialog open={editing} onClose={() => setEditing(false)} title="Edit goal">
+      <Dialog open={editing} onClose={() => setEditing(false)} title={tr("Edit goal")}>
         <GoalForm goal={g} onDone={() => { setEditing(false); refresh(); }} onCancel={() => setEditing(false)} />
       </Dialog>
     </>

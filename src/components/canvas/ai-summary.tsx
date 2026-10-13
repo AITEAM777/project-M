@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { post } from "@/lib/client/api";
@@ -22,10 +23,10 @@ export function AiSummaryButton({ mapId, flush }: { mapId: string; flush: () => 
   };
   return (
     <>
-      <Tooltip label="Summarize this map with AI" side="bottom">
-        <Button variant="ghost" size="icon-sm" loading={busy} onClick={run} aria-label="AI summary">{!busy && <Sparkles className="size-4 text-accent" />}</Button>
+      <Tooltip label={tr("Summarize this map with AI")} side="bottom">
+        <Button variant="ghost" size="icon-sm" loading={busy} onClick={run} aria-label={tr("AI summary")}>{!busy && <Sparkles className="size-4 text-accent" />}</Button>
       </Tooltip>
-      <Dialog open={!!s} onClose={() => setS(null)} title="Map summary" size="lg">
+      <Dialog open={!!s} onClose={() => setS(null)} title={tr("Map summary")} size="lg">
         {s && <SuggestionView s={s} onResolved={() => setS(null)} />}
       </Dialog>
     </>

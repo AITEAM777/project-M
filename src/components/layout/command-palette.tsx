@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -30,26 +31,26 @@ export function CommandPalette() {
 
   const commands = useMemo(() => {
     const nav = [
-      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard }, { title: "My Thoughts", href: "/thoughts", icon: Lightbulb },
-      { title: "Notes", href: "/notes", icon: FileText }, { title: "Mind Maps", href: "/maps", icon: Workflow }, { title: "Projects", href: "/projects", icon: FolderTree },
-      { title: "Tasks", href: "/tasks", icon: CheckSquare }, { title: "Goals", href: "/goals", icon: Goal }, { title: "Calendar", href: "/calendar", icon: CalendarDays },
-      { title: "Habits", href: "/habits", icon: Repeat }, { title: "Knowledge Graph", href: "/graph", icon: Network }, { title: "Timeline of ideas", href: "/timeline", icon: History }, { title: "Settings", href: "/settings", icon: Settings },
-    ].map((n) => ({ ...n, run: () => router.push(n.href), group: "Go to" }));
+      { title: tr("Dashboard"), href: "/dashboard", icon: LayoutDashboard }, { title: tr("My Thoughts"), href: "/thoughts", icon: Lightbulb },
+      { title: tr("Notes"), href: "/notes", icon: FileText }, { title: tr("Mind Maps"), href: "/maps", icon: Workflow }, { title: tr("Projects"), href: "/projects", icon: FolderTree },
+      { title: tr("Tasks"), href: "/tasks", icon: CheckSquare }, { title: tr("Goals"), href: "/goals", icon: Goal }, { title: tr("Calendar"), href: "/calendar", icon: CalendarDays },
+      { title: tr("Habits"), href: "/habits", icon: Repeat }, { title: tr("Knowledge Graph"), href: "/graph", icon: Network }, { title: tr("Timeline of ideas"), href: "/timeline", icon: History }, { title: tr("Settings"), href: "/settings", icon: Settings },
+    ].map((n) => ({ ...n, run: () => router.push(n.href), group: tr("Go to") }));
     const actions = [
-      { title: "Capture a thought", icon: Zap, run: () => setCapture(true) },
-      { title: "New note", icon: Plus, run: () => openCreate("note") },
-      { title: "New mind map", icon: Plus, run: () => openCreate("map") },
-      { title: "New task", icon: Plus, run: () => openCreate("task") },
-      { title: "New goal", icon: Plus, run: () => openCreate("goal") },
-      { title: "New project", icon: Plus, run: () => openCreate("project") },
-      { title: "New habit", icon: Plus, run: () => openCreate("habit") },
-    ].map((a) => ({ ...a, href: "", group: "Create" }));
+      { title: tr("Capture a thought"), icon: Zap, run: () => setCapture(true) },
+      { title: tr("New note"), icon: Plus, run: () => openCreate("note") },
+      { title: tr("New mind map"), icon: Plus, run: () => openCreate("map") },
+      { title: tr("New task"), icon: Plus, run: () => openCreate("task") },
+      { title: tr("New goal"), icon: Plus, run: () => openCreate("goal") },
+      { title: tr("New project"), icon: Plus, run: () => openCreate("project") },
+      { title: tr("New habit"), icon: Plus, run: () => openCreate("habit") },
+    ].map((a) => ({ ...a, href: "", group: tr("Create") }));
     const all = [...actions, ...nav];
     return q ? all.filter((c) => c.title.toLowerCase().includes(q.toLowerCase())) : all;
   }, [q, router, setCapture, openCreate]);
 
   const items = [
-    ...(data && path ? data.results : []).map((r) => ({ key: `${r.type}:${r.id}`, title: r.title, sub: r.snippet, meta: r.meta ?? r.type, icon: ICON[r.type] ?? Search, run: () => router.push(r.href), group: "Results" })),
+    ...(data && path ? data.results : []).map((r) => ({ key: `${r.type}:${r.id}`, title: r.title, sub: r.snippet, meta: r.meta ?? tr(r.type), icon: ICON[r.type] ?? Search, run: () => router.push(r.href), group: tr("Results") })),
     ...commands.map((c) => ({ key: c.title, title: c.title, sub: undefined as string | undefined, meta: c.group === "Go to" ? "" : "", icon: c.icon, run: c.run, group: c.group })),
   ];
 
@@ -63,7 +64,7 @@ export function CommandPalette() {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center p-3 pt-[10vh]">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-fade-in" onClick={close} />
-      <div role="dialog" aria-label="Search and commands" className="relative w-full max-w-2xl rounded-2xl border border-border bg-surface shadow-pop animate-pop-in overflow-hidden"
+      <div role="dialog" aria-label={tr("Search and commands")} className="relative w-full max-w-2xl rounded-2xl border border-border bg-surface shadow-pop animate-pop-in overflow-hidden"
         onKeyDown={(e) => {
           if (e.key === "Escape") close();
           if (e.key === "ArrowDown") { e.preventDefault(); setIdx((i) => Math.min(items.length - 1, i + 1)); }
@@ -72,16 +73,16 @@ export function CommandPalette() {
         }}>
         <div className="flex items-center gap-3 border-b border-border px-4">
           <Search className="size-5 text-muted" />
-          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search thoughts, notes, tasks, goals… (#tag to filter by tag)" className="h-14 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" aria-label="Search" />
+          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Search thoughts, notes, tasks, goals… (#tag to filter by tag)")} className="h-14 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" aria-label={tr("Search")} />
           {isLoading && path && <Spinner className="size-4" />}
         </div>
         <div className="flex gap-1 overflow-x-auto border-b border-border px-3 py-2">
           {TYPES.map((t) => (
-            <button key={t} onClick={() => setType(t)} className={cn("rounded-md px-2 py-1 text-xs font-medium capitalize whitespace-nowrap", type === t ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2")}>{t === "all" ? "All" : t + "s"}</button>
+            <button key={t} onClick={() => setType(t)} className={cn("rounded-md px-2 py-1 text-xs font-medium capitalize whitespace-nowrap", type === t ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2")}>{tr(t === "all" ? "All" : `${t}s`)}</button>
           ))}
         </div>
         <ul className="max-h-[55vh] overflow-y-auto p-2" role="listbox">
-          {path && data && !data.results.length && !isLoading && <li className="px-3 py-6 text-center text-sm text-muted">No results for “{dq}”.</li>}
+          {path && data && !data.results.length && !isLoading && <li className="px-3 py-6 text-center text-sm text-muted">{tr("No results for “{q}”.", { q: dq })}</li>}
           {items.map((it, i) => {
             const header = it.group !== lastGroup ? it.group : null;
             lastGroup = it.group;

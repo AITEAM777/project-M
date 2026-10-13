@@ -20,7 +20,8 @@ const tags = z.array(z.string().trim().min(1).max(40)).max(30);
 export const email = z.string().trim().toLowerCase().email("Enter a valid email").max(200);
 export const password = z.string().min(8, "Password must be at least 8 characters").max(200);
 
-export const registerSchema = z.object({ name: z.string().trim().min(1, "Name is required").max(80), email, password });
+export const LOCALES = ["en", "uk"] as const;
+export const registerSchema = z.object({ name: z.string().trim().min(1, "Name is required").max(80), email, password, locale: z.enum(LOCALES).optional() });
 export const loginSchema = z.object({ email, password: z.string().min(1).max(200) });
 
 export const workspaceSchema = z.object({ name: z.string().trim().min(1).max(80), icon: z.string().max(8).optional() });
@@ -51,7 +52,7 @@ export const noteUpdate = z.object({
   archived: z.boolean().optional(),
 });
 
-export const mapCreate = z.object({ title: z.string().trim().max(200).optional(), folderId: optId, description: text(2000).optional(), template: z.string().max(40).optional() });
+export const mapCreate = z.object({ locale: z.enum(["en", "uk"]).optional(), title: z.string().trim().max(200).optional(), folderId: optId, description: text(2000).optional(), template: z.string().max(40).optional() });
 export const mapUpdate = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   description: text(2000).optional(),
@@ -213,6 +214,7 @@ export const reminderCreate = z.object({ title, remindAt: date, taskId: optId, h
 export const settingsUpdate = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
+  locale: z.enum(LOCALES).optional(),
   aiEnabled: z.boolean().optional(),
   onboarded: z.boolean().optional(),
   dashboardLayout: z.array(z.object({ id: z.string().max(40), hidden: z.boolean().optional() })).max(40).optional(),

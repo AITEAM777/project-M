@@ -1,6 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { tr } from "@/lib/i18n";
 
 export const useWorkspace = create<{ id: string | null; set: (id: string) => void }>()(
   persist((set) => ({ id: null, set: (id) => set({ id }) }), { name: "nodera-workspace" }),
@@ -18,9 +19,9 @@ export const useToasts = create<{ toasts: Toast[]; push: (t: Omit<Toast, "id">) 
 }));
 
 export const toast = {
-  info: (message: string, action?: Toast["action"]) => useToasts.getState().push({ message, kind: "info", action }),
-  success: (message: string, action?: Toast["action"]) => useToasts.getState().push({ message, kind: "success", action }),
-  error: (e: unknown) => useToasts.getState().push({ message: e instanceof Error ? e.message : String(e), kind: "error" }),
+  info: (message: string, action?: Toast["action"]) => useToasts.getState().push({ message: tr(message), kind: "info", action: action && { ...action, label: tr(action.label) } }),
+  success: (message: string, action?: Toast["action"]) => useToasts.getState().push({ message: tr(message), kind: "success", action: action && { ...action, label: tr(action.label) } }),
+  error: (e: unknown) => useToasts.getState().push({ message: tr(e instanceof Error ? e.message : String(e)), kind: "error" }),
 };
 
 type ConfirmReq = { title: string; body?: string; confirmLabel?: string; danger?: boolean; resolve: (ok: boolean) => void };

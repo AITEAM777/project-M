@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useState } from "react";
 import { ArchiveRestore, FolderPlus } from "lucide-react";
@@ -17,10 +18,10 @@ export default function FoldersPage() {
   const kids = (id: string) => data?.folders.filter((f) => f.parentId === id) ?? [];
   return (
     <>
-      <PageHeader title="All Folders" description="Organize every area of your life. Items can live in one folder and appear on many maps."
-        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: "Folders" }, { value: "archived", label: "Archived" }]} /><Button variant="primary" onClick={() => openCreate("folder")}><FolderPlus className="size-4" /> New folder</Button></>} />
+      <PageHeader title={tr("All Folders")} description={tr("Organize every area of your life. Items can live in one folder and appear on many maps.")}
+        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: tr("Folders") }, { value: "archived", label: tr("Archived") }]} /><Button variant="primary" onClick={() => openCreate("folder")}><FolderPlus className="size-4" />{" "}{tr("New folder")}</Button></>} />
       {!data ? <PageSkeleton /> : !top.length ? (
-        <EmptyState icon={<FolderPlus className="size-6" />} title={tab === "active" ? "No folders" : "Nothing archived"} body="Create folders like Health, Finance, Education or Business." />
+        <EmptyState icon={<FolderPlus className="size-6" />} title={tab === "active" ? tr("No folders") : tr("Nothing archived")} body={tr("Create folders like Health, Finance, Education or Business.")} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {top.map((f) => (
@@ -29,13 +30,13 @@ export default function FoldersPage() {
                 <div className="mb-3 grid size-11 place-items-center rounded-xl text-xl" style={{ background: `${f.color}1f` }}>{f.icon}</div>
                 <p className="font-semibold">{f.name}</p>
                 <p className="mt-1 text-xs text-muted">
-                  {[f._count?.notes && `${f._count.notes} notes`, f._count?.maps && `${f._count.maps} maps`, f._count?.projects && `${f._count.projects} projects`, f._count?.goals && `${f._count.goals} goals`].filter(Boolean).join(" · ") || "Empty"}
+                  {[f._count?.notes && `${f._count.notes} notes`, f._count?.maps && `${f._count.maps} maps`, f._count?.projects && `${f._count.projects} projects`, f._count?.goals && `${f._count.goals} goals`].filter(Boolean).join(" · ") || tr("Empty")}
                 </p>
                 {kids(f.id).length > 0 && <p className="mt-2 truncate text-xs text-muted">↳ {kids(f.id).map((k) => `${k.icon} ${k.name}`).join(", ")}</p>}
               </Link>
               {tab === "archived" && (
-                <Button size="sm" className="mt-3" onClick={async () => { try { await patch(`/api/folders/${f.id}`, { archived: false }); mutate(); invalidate("/api/folders"); toast.success("Folder restored"); } catch (e) { toast.error(e); } }}>
-                  <ArchiveRestore className="size-4" /> Restore
+                <Button size="sm" className="mt-3" onClick={async () => { try { await patch(`/api/folders/${f.id}`, { archived: false }); mutate(); invalidate("/api/folders"); toast.success(tr("Folder restored")); } catch (e) { toast.error(e); } }}>
+                  <ArchiveRestore className="size-4" />{" "}{tr("Restore")}
                 </Button>
               )}
             </Card>

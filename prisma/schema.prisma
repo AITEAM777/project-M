@@ -115,6 +115,7 @@ model User {
   passwordHash String
   plan         Plan     @default(FREE)
   theme        String   @default("system")
+  locale       String   @default("en")
   aiEnabled    Boolean  @default(true)
   onboardedAt  DateTime?
   dashboardLayout Json?

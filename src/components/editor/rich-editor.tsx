@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
@@ -32,7 +33,7 @@ export function RichEditor({ noteId, content, onChange, onUploaded }: { noteId: 
       Table.configure({ resizable: true }),
       TableRow, TableHeader, TableCell,
       Image.configure({ allowBase64: false }),
-      Placeholder.configure({ placeholder: "Start writing… type freely, use the toolbar or Markdown shortcuts (#, -, [ ], >, ```)" }),
+      Placeholder.configure({ placeholder: tr("Start writing… type freely, use the toolbar or Markdown shortcuts (#, -, [ ], >, ```)") }),
     ],
     content: (content as object) ?? "",
     editorProps: {
@@ -109,40 +110,40 @@ function Toolbar({ editor, onPickFile }: { editor: Editor; onPickFile: () => voi
     c().extendMarkRange("link").setLink({ href: url }).run();
   };
   return (
-    <div className="sticky top-0 z-10 -mx-2 mb-4 flex flex-wrap items-center gap-0.5 rounded-xl border border-border bg-surface/95 p-1 shadow-soft backdrop-blur">
-      <B label="Undo" icon={Undo2} run={() => c().undo().run()} disabled={!st.canUndo} />
-      <B label="Redo" icon={Redo2} run={() => c().redo().run()} disabled={!st.canRedo} />
+    <div data-tour="note-toolbar" className="sticky top-0 z-10 -mx-2 mb-4 flex flex-wrap items-center gap-0.5 rounded-xl border border-border bg-surface/95 p-1 shadow-soft backdrop-blur">
+      <B label={tr("Undo")} icon={Undo2} run={() => c().undo().run()} disabled={!st.canUndo} />
+      <B label={tr("Redo")} icon={Redo2} run={() => c().redo().run()} disabled={!st.canRedo} />
       <span className="mx-1 h-5 w-px bg-border" />
-      <B label="Heading 1" icon={Heading1} on={st.h1} run={() => c().toggleHeading({ level: 1 }).run()} />
-      <B label="Heading 2" icon={Heading2} on={st.h2} run={() => c().toggleHeading({ level: 2 }).run()} />
-      <B label="Heading 3" icon={Heading3} on={st.h3} run={() => c().toggleHeading({ level: 3 }).run()} />
+      <B label={tr("Heading 1")} icon={Heading1} on={st.h1} run={() => c().toggleHeading({ level: 1 }).run()} />
+      <B label={tr("Heading 2")} icon={Heading2} on={st.h2} run={() => c().toggleHeading({ level: 2 }).run()} />
+      <B label={tr("Heading 3")} icon={Heading3} on={st.h3} run={() => c().toggleHeading({ level: 3 }).run()} />
       <span className="mx-1 h-5 w-px bg-border" />
-      <B label="Bold (⌘B)" icon={Bold} on={st.bold} run={() => c().toggleBold().run()} />
-      <B label="Italic (⌘I)" icon={Italic} on={st.italic} run={() => c().toggleItalic().run()} />
-      <B label="Underline (⌘U)" icon={UnderlineIcon} on={st.underline} run={() => c().toggleUnderline().run()} />
-      <B label="Strikethrough" icon={Strikethrough} on={st.strike} run={() => c().toggleStrike().run()} />
-      <B label="Inline code" icon={Code} on={st.code} run={() => c().toggleCode().run()} />
+      <B label={tr("Bold (⌘B)")} icon={Bold} on={st.bold} run={() => c().toggleBold().run()} />
+      <B label={tr("Italic (⌘I)")} icon={Italic} on={st.italic} run={() => c().toggleItalic().run()} />
+      <B label={tr("Underline (⌘U)")} icon={UnderlineIcon} on={st.underline} run={() => c().toggleUnderline().run()} />
+      <B label={tr("Strikethrough")} icon={Strikethrough} on={st.strike} run={() => c().toggleStrike().run()} />
+      <B label={tr("Inline code")} icon={Code} on={st.code} run={() => c().toggleCode().run()} />
       <span className="mx-1 h-5 w-px bg-border" />
-      <B label="Bullet list" icon={List} on={st.ul} run={() => c().toggleBulletList().run()} />
-      <B label="Numbered list" icon={ListOrdered} on={st.ol} run={() => c().toggleOrderedList().run()} />
-      <B label="Checklist" icon={ListChecks} on={st.task} run={() => c().toggleTaskList().run()} />
-      <B label="Quote" icon={Quote} on={st.quote} run={() => c().toggleBlockquote().run()} />
-      <B label="Code block" icon={CodeSquare} on={st.codeBlock} run={() => c().toggleCodeBlock().run()} />
-      <B label="Divider" icon={Minus} run={() => c().setHorizontalRule().run()} />
+      <B label={tr("Bullet list")} icon={List} on={st.ul} run={() => c().toggleBulletList().run()} />
+      <B label={tr("Numbered list")} icon={ListOrdered} on={st.ol} run={() => c().toggleOrderedList().run()} />
+      <B label={tr("Checklist")} icon={ListChecks} on={st.task} run={() => c().toggleTaskList().run()} />
+      <B label={tr("Quote")} icon={Quote} on={st.quote} run={() => c().toggleBlockquote().run()} />
+      <B label={tr("Code block")} icon={CodeSquare} on={st.codeBlock} run={() => c().toggleCodeBlock().run()} />
+      <B label={tr("Divider")} icon={Minus} run={() => c().setHorizontalRule().run()} />
       <span className="mx-1 h-5 w-px bg-border" />
-      <B label="Link" icon={Link2} on={st.link} run={setLink} />
+      <B label={tr("Link")} icon={Link2} on={st.link} run={setLink} />
       <NoteLinkPicker editor={editor} />
-      <B label="Image or file" icon={ImagePlus} run={onPickFile} />
-      <Popover trigger={({ toggle }) => <B label="Table" icon={TableIcon} on={st.table} run={toggle} />}>
+      <B label={tr("Image or file")} icon={ImagePlus} run={onPickFile} />
+      <Popover trigger={({ toggle }) => <B label={tr("Table")} icon={TableIcon} on={st.table} run={toggle} />}>
         {(close) => (
           <>
-            <MenuItem onClick={() => { close(); c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); }}>Insert 3×3 table</MenuItem>
+            <MenuItem onClick={() => { close(); c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); }}>{tr("Insert 3×3 table")}</MenuItem>
             <MenuSeparator />
-            <MenuItem disabled={!st.table} onClick={() => { close(); c().addRowAfter().run(); }}>Add row</MenuItem>
-            <MenuItem disabled={!st.table} onClick={() => { close(); c().addColumnAfter().run(); }}>Add column</MenuItem>
-            <MenuItem disabled={!st.table} onClick={() => { close(); c().deleteRow().run(); }}>Delete row</MenuItem>
-            <MenuItem disabled={!st.table} onClick={() => { close(); c().deleteColumn().run(); }}>Delete column</MenuItem>
-            <MenuItem disabled={!st.table} danger onClick={() => { close(); c().deleteTable().run(); }}>Delete table</MenuItem>
+            <MenuItem disabled={!st.table} onClick={() => { close(); c().addRowAfter().run(); }}>{tr("Add row")}</MenuItem>
+            <MenuItem disabled={!st.table} onClick={() => { close(); c().addColumnAfter().run(); }}>{tr("Add column")}</MenuItem>
+            <MenuItem disabled={!st.table} onClick={() => { close(); c().deleteRow().run(); }}>{tr("Delete row")}</MenuItem>
+            <MenuItem disabled={!st.table} onClick={() => { close(); c().deleteColumn().run(); }}>{tr("Delete column")}</MenuItem>
+            <MenuItem disabled={!st.table} danger onClick={() => { close(); c().deleteTable().run(); }}>{tr("Delete table")}</MenuItem>
           </>
         )}
       </Popover>
@@ -160,11 +161,11 @@ function NoteLinkPicker({ editor }: { editor: Editor }) {
   useEffect(() => { if (open) setTimeout(() => input.current?.focus(), 10); }, [open]);
   return (
     <Popover open={open} onOpenChange={setOpen} className="w-72" trigger={() => (
-      <Tooltip label="Link to another note" side="bottom">
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setOpen(!open)} aria-label="Link to another note" className="grid size-8 place-items-center rounded-md text-text-2 hover:bg-surface-2"><NotebookPen className="size-4" /></button>
+      <Tooltip label={tr("Link to another note")} side="bottom">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setOpen(!open)} aria-label={tr("Link to another note")} className="grid size-8 place-items-center rounded-md text-text-2 hover:bg-surface-2"><NotebookPen className="size-4" /></button>
       </Tooltip>
     )}>
-      <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search notes…" className="mb-1 h-8 w-full rounded-md border border-border bg-surface px-2 text-sm outline-none focus:border-accent" />
+      <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Search notes…")} className="mb-1 h-8 w-full rounded-md border border-border bg-surface px-2 text-sm outline-none focus:border-accent" />
       {data?.notes.map((n) => (
         <MenuItem key={n.id} onClick={() => {
           const { from, to } = editor.state.selection;
@@ -174,7 +175,7 @@ function NoteLinkPicker({ editor }: { editor: Editor }) {
           setQ("");
         }}>{n.kind === "THOUGHT" ? "💭" : "📝"} {n.title}</MenuItem>
       ))}
-      {data && !data.notes.length && <p className="px-2 py-2 text-sm text-muted">No notes found.</p>}
+      {data && !data.notes.length && <p className="px-2 py-2 text-sm text-muted">{tr("No notes found.")}</p>}
     </Popover>
   );
 }

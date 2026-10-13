@@ -1,4 +1,5 @@
 "use client";
+import { tr, translated } from "@/lib/i18n";
 import Link from "next/link";
 import { memo, useMemo, useState } from "react";
 import { Background, BackgroundVariant, Controls, Handle, Position, ReactFlow, ReactFlowProvider, type Edge, type Node, type NodeProps } from "@xyflow/react";
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils";
 type GNode = { id: string; type: string; label: string; folderId?: string | null; color?: string; href: string; status?: string };
 type GEdge = { id: string; source: string; target: string; relation: Relation };
 
-const TYPE_META: Record<string, { label: string; color: string; icon: string }> = {
+const TYPE_META: Record<string, { label: string; color: string; icon: string }> = translated({
   goal: { label: "Goals", color: "#ef4444", icon: "🎯" },
   project: { label: "Projects", color: "#8b5cf6", icon: "📦" },
   task: { label: "Tasks", color: "#10b981", icon: "✅" },
@@ -23,7 +24,7 @@ const TYPE_META: Record<string, { label: string; color: string; icon: string }> 
   thought: { label: "Thoughts", color: "#f59e0b", icon: "💭" },
   folder: { label: "Folders", color: "#3b82f6", icon: "📁" },
   node: { label: "Map thoughts", color: "#6366f1", icon: "◦" },
-};
+});
 
 type GData = { label: string; type: string; dim: boolean; highlight: boolean; degree: number; done: boolean };
 
@@ -116,16 +117,16 @@ export default function GraphPage() {
         </ReactFlowProvider>
       )}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start gap-2 p-3">
-        <div className="pointer-events-auto w-full max-w-xs rounded-xl border border-border bg-surface/95 p-3 shadow-card backdrop-blur sm:w-72">
+        <div data-tour="graph-filters" className="pointer-events-auto w-full max-w-xs rounded-xl border border-border bg-surface/95 p-3 shadow-card backdrop-blur sm:w-72">
           <div className="mb-2 flex items-center gap-2">
-            <Link href="/dashboard" className="text-muted hover:text-text" aria-label="Back"><ArrowLeft className="size-4" /></Link>
+            <Link href="/dashboard" className="text-muted hover:text-text" aria-label={tr("Back")}><ArrowLeft className="size-4" /></Link>
             <Network className="size-4 text-accent" />
-            <h1 className="text-sm font-semibold">Knowledge Graph</h1>
+            <h1 className="text-sm font-semibold">{tr("Knowledge Graph")}</h1>
             <span className="ml-auto text-xs text-muted tabular">{filtered?.nodes.length ?? 0} · {filtered?.edges.length ?? 0}</span>
           </div>
           <div className="relative mb-2">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Highlight…" className="h-8 pl-8" aria-label="Highlight nodes" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Highlight…")} className="h-8 pl-8" aria-label={tr("Highlight nodes")} />
           </div>
           <div className="flex flex-wrap gap-1">
             {Object.entries(TYPE_META).filter(([k]) => k !== "node").map(([k, m]) => (
@@ -134,16 +135,16 @@ export default function GraphPage() {
                 style={types.has(k) ? { background: m.color } : undefined}>{m.label}</button>
             ))}
           </div>
-          <label className="mt-2 flex items-center gap-2 text-xs text-text-2"><input type="checkbox" checked={includeNodes} onChange={(e) => setIncludeNodes(e.target.checked)} className="accent-[var(--accent)]" /> Include unlinked map thoughts</label>
-          <label className="mt-1 flex items-center gap-2 text-xs text-text-2"><input type="checkbox" checked={hideIsolated} onChange={(e) => setHideIsolated(e.target.checked)} className="accent-[var(--accent)]" /> Hide unconnected items</label>
-          <p className="mt-2 text-[11px] leading-snug text-muted">Cross-folder links appear here automatically: tasks → projects → goals, note links, and every connection you draw on any mind map.</p>
+          <label className="mt-2 flex items-center gap-2 text-xs text-text-2"><input type="checkbox" checked={includeNodes} onChange={(e) => setIncludeNodes(e.target.checked)} className="accent-[var(--accent)]" />{" "}{tr("Include unlinked map thoughts")}</label>
+          <label className="mt-1 flex items-center gap-2 text-xs text-text-2"><input type="checkbox" checked={hideIsolated} onChange={(e) => setHideIsolated(e.target.checked)} className="accent-[var(--accent)]" />{" "}{tr("Hide unconnected items")}</label>
+          <p className="mt-2 text-[11px] leading-snug text-muted">{tr("Cross-folder links appear here automatically: tasks → projects → goals, note links, and every connection you draw on any mind map.")}</p>
         </div>
       </div>
       {filtered && !filtered.nodes.length && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center p-6 text-center">
           <div className="max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-card">
-            <p className="font-semibold">Your graph is still empty</p>
-            <p className="mt-1 text-sm text-muted">Link tasks to projects and goals, connect notes, or draw connections on a mind map — they’ll show up here.</p>
+            <p className="font-semibold">{tr("Your graph is still empty")}</p>
+            <p className="mt-1 text-sm text-muted">{tr("Link tasks to projects and goals, connect notes, or draw connections on a mind map — they’ll show up here.")}</p>
           </div>
         </div>
       )}
@@ -152,10 +153,10 @@ export default function GraphPage() {
           <div className="flex items-start gap-2">
             <span>{TYPE_META[selected.type]?.icon}</span>
             <p className="flex-1 font-semibold leading-snug">{selected.label}</p>
-            <button onClick={() => setSel(null)} className="text-muted hover:text-text" aria-label="Close"><X className="size-4" /></button>
+            <button onClick={() => setSel(null)} className="text-muted hover:text-text" aria-label={tr("Close")}><X className="size-4" /></button>
           </div>
           <p className="mt-0.5 text-xs capitalize text-muted">{selected.type}{selected.status ? ` · ${selected.status.toLowerCase().replace("_", " ")}` : ""}</p>
-          <Link href={selected.href}><Button size="sm" className="mt-3 w-full"><ExternalLink className="size-3.5" /> Open</Button></Link>
+          <Link href={selected.href}><Button size="sm" className="mt-3 w-full"><ExternalLink className="size-3.5" />{" "}{tr("Open")}</Button></Link>
           {selEdges.length > 0 && (
             <ul className="mt-3 max-h-64 space-y-1 overflow-y-auto text-sm">
               {selEdges.map((e) => {

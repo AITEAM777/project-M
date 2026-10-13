@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckSquare, FileText, Lightbulb } from "lucide-react";
@@ -46,7 +47,7 @@ export function QuickCapture() {
       setText("");
       try { sessionStorage.removeItem("nodera-capture"); } catch {}
       setCapture(false);
-      toast.success(kind === "TASK" ? "Task added" : "Captured", open ? undefined : { label: "Open", run: () => router.push(href) });
+      toast.success(kind === "TASK" ? "Task added" : "Captured", open ? undefined : { label: tr("Open"), run: () => router.push(href) });
       if (open) router.push(href);
     } catch (e) {
       toast.error(e);
@@ -56,26 +57,26 @@ export function QuickCapture() {
   };
 
   return (
-    <Dialog open={captureOpen} onClose={() => setCapture(false)} title="Quick capture" size="md"
+    <Dialog open={captureOpen} onClose={() => setCapture(false)} title={tr("Quick capture")} size="md"
       footer={
         <div className="flex w-full items-center gap-2">
-          <span className="hidden sm:block text-xs text-muted mr-auto"><Kbd>⌘</Kbd> <Kbd>↵</Kbd> to save</span>
-          <Button variant="ghost" onClick={() => save(true)} disabled={!text.trim()} loading={busy}>Save & open</Button>
-          <Button variant="primary" onClick={() => save()} disabled={!text.trim()} loading={busy}>Save</Button>
+          <span className="hidden sm:block text-xs text-muted mr-auto"><Kbd>⌘</Kbd> <Kbd>↵</Kbd>{" "}{tr("to save")}</span>
+          <Button variant="ghost" onClick={() => save(true)} disabled={!text.trim()} loading={busy}>{tr("Save & open")}</Button>
+          <Button variant="primary" onClick={() => save()} disabled={!text.trim()} loading={busy}>{tr("Save")}</Button>
         </div>
       }>
       <div className="space-y-3">
         <Tabs value={kind} onChange={setKind} items={[
-          { value: "THOUGHT", label: <span className="flex items-center gap-1.5"><Lightbulb className="size-3.5" />Thought</span> },
-          { value: "NOTE", label: <span className="flex items-center gap-1.5"><FileText className="size-3.5" />Note</span> },
-          { value: "TASK", label: <span className="flex items-center gap-1.5"><CheckSquare className="size-3.5" />Task</span> },
+          { value: "THOUGHT", label: <span className="flex items-center gap-1.5"><Lightbulb className="size-3.5" />{tr("Thought")}</span> },
+          { value: "NOTE", label: <span className="flex items-center gap-1.5"><FileText className="size-3.5" />{tr("Note")}</span> },
+          { value: "TASK", label: <span className="flex items-center gap-1.5"><CheckSquare className="size-3.5" />{tr("Task")}</span> },
         ]} />
         <Textarea autoFocus value={text} onChange={(e) => setText(e.target.value)} rows={5}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); } }}
-          placeholder={kind === "TASK" ? "What needs to be done? (first line = title)" : "What's on your mind? The first line becomes the title."} />
+          placeholder={kind === "TASK" ? tr("What needs to be done? (first line = title)") : tr("What's on your mind? The first line becomes the title.")} />
         {kind !== "TASK" && (
-          <Select value={folderId} onChange={(e) => setFolderId(e.target.value)} aria-label="Folder">
-            <option value="">No folder (inbox)</option>
+          <Select value={folderId} onChange={(e) => setFolderId(e.target.value)} aria-label={tr("Folder")}>
+            <option value="">{tr("No folder (inbox)")}</option>
             {data?.folders.map((f) => <option key={f.id} value={f.id}>{f.icon} {f.name}</option>)}
           </Select>
         )}

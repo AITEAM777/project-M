@@ -1,4 +1,5 @@
 "use client";
+import { tp, tr, translated } from "@/lib/i18n";
 import Link from "next/link";
 import { useState } from "react";
 import { Check, Sparkles, X } from "lucide-react";
@@ -10,8 +11,8 @@ import { Badge } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const REL: Record<string, string> = { RELATED_TO: "related to", DEPENDS_ON: "depends on", SUPPORTS: "supports", BLOCKS: "blocks", PART_OF: "part of", REQUIRES: "requires", CONFLICTS_WITH: "conflicts with", COMBINES_WITH: "can combine with", LEADS_TO: "leads to" };
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const REL: Record<string, string> = translated({ RELATED_TO: "related to", DEPENDS_ON: "depends on", SUPPORTS: "supports", BLOCKS: "blocks", PART_OF: "part of", REQUIRES: "requires", CONFLICTS_WITH: "conflicts with", COMBINES_WITH: "can combine with", LEADS_TO: "leads to" });
+const DAYS = translated(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
 
 /**
  * Renders an AI suggestion, clearly marked as AI-generated. Nothing is saved until
@@ -36,7 +37,7 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
       setResult(r.result);
       if (action === "accept") {
         invalidate("/api/");
-        toast.success("Applied to your workspace");
+        toast.success(tr("Applied to your workspace"));
       }
       onResolved?.(r.result);
     } catch (e) { toast.error(e); } finally { setBusy(null); }
@@ -44,14 +45,14 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
 
   const Check_ = ({ i }: { i: number }) =>
     status === "PENDING" && items.length > 1 ? (
-      <input type="checkbox" checked={selected.includes(i)} onChange={() => toggle(i)} className="mt-1 accent-[var(--accent)]" aria-label="Include" />
+      <input type="checkbox" checked={selected.includes(i)} onChange={() => toggle(i)} className="mt-1 accent-[var(--accent)]" aria-label={tr("Include")} />
     ) : null;
 
   return (
     <div className="rounded-2xl border border-accent/30 bg-accent-soft/40 p-4">
       <div className="mb-3 flex items-center gap-2">
-        <Badge className="border-accent/30 bg-accent-soft text-accent"><Sparkles className="size-3" /> AI suggestion</Badge>
-        <span className="text-xs text-muted">Review before applying — nothing changes until you accept.</span>
+        <Badge className="border-accent/30 bg-accent-soft text-accent"><Sparkles className="size-3" />{" "}{tr("AI suggestion")}</Badge>
+        <span className="text-xs text-muted">{tr("Review before applying — nothing changes until you accept.")}</span>
       </div>
 
       {s.kind === "plan" && (
@@ -63,15 +64,15 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
               <div className="min-w-0 flex-1 text-sm">
                 <p className="font-semibold">🎯 {g.title} <span className="font-normal text-muted">· {g.category}</span></p>
                 <p className="mt-0.5 text-muted">{g.description}</p>
-                {g.milestones.length > 0 && <p className="mt-1.5"><span className="font-medium">Milestones:</span> {g.milestones.join(" → ")}</p>}
-                {g.firstTasks.length > 0 && <p className="mt-1"><span className="font-medium">First steps:</span> {g.firstTasks.join("; ")}</p>}
-                {g.habits.length > 0 && <p className="mt-1"><span className="font-medium">Habits:</span> {g.habits.map((h: any) => `${h.title} (${h.targetPerPeriod} ${h.unit}/${h.frequency === "DAILY" ? "day" : "week"})`).join("; ")}</p>}
+                {g.milestones.length > 0 && <p className="mt-1.5"><span className="font-medium">{tr("Milestones:")}</span> {g.milestones.join(" → ")}</p>}
+                {g.firstTasks.length > 0 && <p className="mt-1"><span className="font-medium">{tr("First steps:")}</span> {g.firstTasks.join("; ")}</p>}
+                {g.habits.length > 0 && <p className="mt-1"><span className="font-medium">{tr("Habits:")}</span> {g.habits.map((h: any) => `${h.title} (${h.targetPerPeriod} ${h.unit}/${h.frequency === "DAILY" ? "day" : "week"})`).join("; ")}</p>}
               </div>
             </label>
           ))}
           {p.connections.length > 0 && (
             <div className="text-sm">
-              <p className="font-medium">Connections</p>
+              <p className="font-medium">{tr("Connections")}</p>
               <ul className="mt-1 space-y-0.5 text-muted">
                 {p.connections.map((c: any, i: number) => {
                   const t = (k: string) => p.goals.find((g: any) => g.key === k)?.title ?? k;
@@ -82,9 +83,9 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
           )}
           {p.schedule.length > 0 && (
             <div className="text-sm">
-              <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={includeSchedule} disabled={status !== "PENDING"} onChange={(e) => setIncludeSchedule(e.target.checked)} className="accent-[var(--accent)]" /> Weekly schedule (adds recurring calendar blocks)</label>
+              <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={includeSchedule} disabled={status !== "PENDING"} onChange={(e) => setIncludeSchedule(e.target.checked)} className="accent-[var(--accent)]" />{" "}{tr("Weekly schedule (adds recurring calendar blocks)")}</label>
               <ul className="mt-1 grid gap-0.5 text-muted sm:grid-cols-2">
-                {p.schedule.map((b: any, i: number) => <li key={i}>{DAYS[b.dayOfWeek]} {b.start} · {b.durationMinutes}m — {b.title}</li>)}
+                {p.schedule.map((b: any, i: number) => <li key={i}>{DAYS[b.dayOfWeek]} {b.start} · {tr("{m} min", { m: b.durationMinutes })} — {b.title}</li>)}
               </ul>
             </div>
           )}
@@ -93,7 +94,7 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
 
       {s.kind === "connections" && (
         <ul className="space-y-2">
-          {p.suggestions.length === 0 && <li className="text-sm text-muted">No new connections found — your items look well connected.</li>}
+          {p.suggestions.length === 0 && <li className="text-sm text-muted">{tr("No new connections found — your items look well connected.")}</li>}
           {p.suggestions.map((c: any, i: number) => (
             <li key={i}>
               <label className={cn("flex gap-3 rounded-xl border border-border bg-surface p-3 text-sm", !selected.includes(i) && "opacity-50")}>
@@ -116,7 +117,7 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
                 <Check_ i={i} />
                 <span className="flex-1">
                   <span className="font-semibold">🏁 {m.title}</span>
-                  <ul className="mt-1 space-y-0.5 text-muted">{m.tasks.map((t: any, j: number) => <li key={j}>• {t.title} <span className="text-xs">({t.estimateMinutes}m)</span></li>)}</ul>
+                  <ul className="mt-1 space-y-0.5 text-muted">{m.tasks.map((t: any, j: number) => <li key={j}>• {t.title} <span className="text-xs">({tr("{m} min", { m: t.estimateMinutes })})</span></li>)}</ul>
                 </span>
               </label>
             </li>
@@ -126,11 +127,11 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
 
       {s.kind === "organize" && (
         <div className="space-y-1.5 text-sm">
-          <p><span className="font-medium">Title:</span> {p.title}</p>
-          <p><span className="font-medium">Tags:</span> {p.tags.map((t: string) => `#${t}`).join(" ")}</p>
-          {p.folderId && <p><span className="font-medium">Folder:</span> suggested folder will be applied</p>}
-          {p.relatedRefs.length > 0 && <p><span className="font-medium">Related:</span> {p.relatedRefs.length} existing items</p>}
-          {p.nextActions.length > 0 && <div><p className="font-medium">Actions found (will become tasks):</p><ul className="text-muted">{p.nextActions.map((a: string, i: number) => <li key={i}>• {a}</li>)}</ul></div>}
+          <p><span className="font-medium">{tr("Title:")}</span> {p.title}</p>
+          <p><span className="font-medium">{tr("Tags:")}</span> {p.tags.map((t: string) => `#${t}`).join(" ")}</p>
+          {p.folderId && <p><span className="font-medium">{tr("Folder:")}</span>{" "}{tr("suggested folder will be applied")}</p>}
+          {p.relatedRefs.length > 0 && <p><span className="font-medium">{tr("Related:")}</span> {tp(p.relatedRefs.length, "# existing item", "# existing items")}</p>}
+          {p.nextActions.length > 0 && <div><p className="font-medium">{tr("Actions found (will become tasks):")}</p><ul className="text-muted">{p.nextActions.map((a: string, i: number) => <li key={i}>• {a}</li>)}</ul></div>}
         </div>
       )}
 
@@ -141,7 +142,7 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
             .filter(([, v]) => Array.isArray(v) && v.length)
             .map(([label, v]) => (
               <div key={label as string}>
-                <p className="font-medium">{label as string}</p>
+                <p className="font-medium">{tr(label as string)}</p>
                 <ul className="mt-0.5 list-disc space-y-0.5 pl-5 text-text-2">{(v as string[]).map((x, i) => <li key={i}>{x}</li>)}</ul>
               </div>
             ))}
@@ -151,16 +152,16 @@ export function SuggestionView({ s, onResolved }: { s: AiSuggestion; onResolved?
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {status === "PENDING" && actionable ? (
           <>
-            <Button variant="primary" size="sm" loading={busy === "accept"} disabled={items.length > 0 && !selected.length} onClick={() => resolve("accept")}><Check className="size-4" /> Accept{items.length > 1 ? ` (${selected.length})` : ""}</Button>
-            <Button variant="ghost" size="sm" loading={busy === "dismiss"} onClick={() => resolve("dismiss")}><X className="size-4" /> Dismiss</Button>
+            <Button variant="primary" size="sm" loading={busy === "accept"} disabled={items.length > 0 && !selected.length} onClick={() => resolve("accept")}><Check className="size-4" />{" "}{tr("Accept")}{items.length > 1 ? ` (${selected.length})` : ""}</Button>
+            <Button variant="ghost" size="sm" loading={busy === "dismiss"} onClick={() => resolve("dismiss")}><X className="size-4" />{" "}{tr("Dismiss")}</Button>
           </>
         ) : status === "PENDING" ? (
-          <Button variant="ghost" size="sm" loading={busy === "dismiss"} onClick={() => resolve("dismiss")}>Done</Button>
+          <Button variant="ghost" size="sm" loading={busy === "dismiss"} onClick={() => resolve("dismiss")}>{tr("Done")}</Button>
         ) : (
-          <span className="text-xs font-medium text-muted">{status === "ACCEPTED" ? "✓ Applied" : "Dismissed"}</span>
+          <span className="text-xs font-medium text-muted">{status === "ACCEPTED" ? tr("✓ Applied") : tr("Dismissed")}</span>
         )}
-        {result?.mapId && <Link href={`/maps/${result.mapId}`} className="text-sm font-medium text-accent hover:underline">Open the map →</Link>}
-        {result?.goalId && <Link href={`/goals/${result.goalId}`} className="text-sm font-medium text-accent hover:underline">Open the goal →</Link>}
+        {result?.mapId && <Link href={`/maps/${result.mapId}`} className="text-sm font-medium text-accent hover:underline">{tr("Open the map →")}</Link>}
+        {result?.goalId && <Link href={`/goals/${result.goalId}`} className="text-sm font-medium text-accent hover:underline">{tr("Open the goal →")}</Link>}
       </div>
     </div>
   );

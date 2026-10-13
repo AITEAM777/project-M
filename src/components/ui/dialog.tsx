@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -67,7 +68,7 @@ export function Dialog({
             {description && <p className="mt-1 text-sm text-muted">{description}</p>}
           </div>
         )}
-        <button onClick={onClose} aria-label="Close" className="absolute right-3 top-3 p-1.5 rounded-lg text-muted hover:bg-surface-2 hover:text-text">
+        <button onClick={onClose} aria-label={tr("Close")} className="absolute right-3 top-3 p-1.5 rounded-lg text-muted hover:bg-surface-2 hover:text-text">
           <X className="size-4" />
         </button>
         <div className="px-5 pb-5 overflow-y-auto">{children}</div>
@@ -86,13 +87,13 @@ export function ConfirmHost() {
       open={!!req}
       onClose={() => done(false)}
       size="sm"
-      title={req?.title}
-      description={req?.body}
+      title={req?.title && tr(req.title)}
+      description={req?.body && tr(req.body)}
       footer={
         <>
-          <Button variant="ghost" onClick={() => done(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => done(false)}>{tr("Cancel")}</Button>
           <Button variant={req?.danger ? "danger" : "primary"} onClick={() => done(true)} autoFocus>
-            {req?.confirmLabel ?? "Confirm"}
+            {tr(req?.confirmLabel ?? "Confirm")}
           </Button>
         </>
       }

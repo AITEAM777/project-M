@@ -1,6 +1,8 @@
 "use client";
+import { fmt } from "@/lib/client/format";
+import { tr } from "@/lib/i18n";
 import { useState } from "react";
-import { addDays, format } from "date-fns";
+import { addDays} from "date-fns";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,7 +18,7 @@ export function DailyBars({ values, since, label, height = 120, className }: { v
   const total = values.reduce((a, b) => a + b, 0);
   return (
     <figure className={cn("relative", className)}>
-      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full overflow-visible" style={{ height }} role="img" aria-label={`${label}: ${total} in the last ${values.length} days`}>
+      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full overflow-visible" style={{ height }} role="img" aria-label={tr("{label}: {n} in the last {d} days", { label, n: total, d: values.length })}>
         {[0.5, 1].map((f) => <line key={f} x1="0" x2="100" y1={height - f * (height - 8)} y2={height - f * (height - 8)} stroke="var(--border)" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="2 3" />)}
         {values.map((v, i) => {
           const h = v ? Math.max(3, (v / max) * (height - 8)) : 0;
@@ -30,17 +32,17 @@ export function DailyBars({ values, since, label, height = 120, className }: { v
         })}
       </svg>
       <div className="mt-1.5 flex justify-between text-[10.5px] text-muted tabular">
-        <span>{format(start, "d MMM")}</span><span>Today</span>
+        <span>{fmt(start, "d MMM")}</span><span>{tr("Today")}</span>
       </div>
       {hover !== null && (
         <div className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-border bg-surface px-2 py-1 text-xs shadow-card"
           style={{ left: `${(hover + 0.5) * w}%` }}>
-          <span className="font-semibold tabular">{values[hover]}</span> <span className="text-muted">{format(addDays(start, hover), "EEE d MMM")}</span>
+          <span className="font-semibold tabular">{values[hover]}</span> <span className="text-muted">{fmt(addDays(start, hover), "EEE d MMM")}</span>
         </div>
       )}
       <table className="sr-only">
         <caption>{label}</caption>
-        <tbody>{values.map((v, i) => <tr key={i}><td>{format(addDays(start, i), "yyyy-MM-dd")}</td><td>{v}</td></tr>)}</tbody>
+        <tbody>{values.map((v, i) => <tr key={i}><td>{fmt(addDays(start, i), "yyyy-MM-dd")}</td><td>{v}</td></tr>)}</tbody>
       </table>
     </figure>
   );
@@ -51,13 +53,13 @@ export function HabitHeat({ counts, target, color, days = 28, size = 13 }: { cou
   const today = new Date();
   const cells = Array.from({ length: days }, (_, i) => addDays(today, i - days + 1));
   return (
-    <div className="flex flex-wrap gap-[3px]" role="img" aria-label={`${cells.filter((d) => (counts[format(d, "yyyy-MM-dd")] ?? 0) >= target).length} of ${days} days completed`}>
+    <div className="flex flex-wrap gap-[3px]" role="img" aria-label={tr("{a} of {b} days completed", { a: cells.filter((d) => (counts[fmt(d, "yyyy-MM-dd")] ?? 0) >= target).length, b: days })}>
       {cells.map((d) => {
-        const k = format(d, "yyyy-MM-dd");
+        const k = fmt(d, "yyyy-MM-dd");
         const c = counts[k] ?? 0;
         const ratio = Math.min(1, c / Math.max(1, target));
         return (
-          <span key={k} title={`${format(d, "EEE d MMM")}: ${c}/${target}`} className="rounded-[3px]"
+          <span key={k} title={`${fmt(d, "EEE d MMM")}: ${c}/${target}`} className="rounded-[3px]"
             style={{ width: size, height: size, background: ratio ? `color-mix(in oklab, ${color} ${25 + ratio * 75}%, var(--surface-2))` : "var(--surface-3)" }} />
         );
       })}

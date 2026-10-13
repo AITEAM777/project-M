@@ -1,4 +1,5 @@
 "use client";
+import { tp, tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -37,7 +38,7 @@ type SaveState = "saved" | "dirty" | "saving" | "error";
 
 export function MapEditor({ mapId }: { mapId: string }) {
   const { data, error } = useApi<MapResponse>(`/api/maps/${mapId}`, { revalidateOnFocus: false, revalidateIfStale: false, keepPreviousData: false });
-  if (error) return <div className="grid h-full place-items-center p-6 text-center text-sm text-muted">Could not open this map: {error.message}<br /><Link href="/maps" className="mt-2 text-accent">Back to maps</Link></div>;
+  if (error) return <div className="grid h-full place-items-center p-6 text-center text-sm text-muted">{tr("Could not open this map:")}{" "}{error.message}<br /><Link href="/maps" className="mt-2 text-accent">{tr("Back to maps")}</Link></div>;
   if (!data || data.map.id !== mapId) return <div className="grid h-full place-items-center"><Spinner className="size-7" /></div>;
   return (
     <ReactFlowProvider>
@@ -235,8 +236,8 @@ function Editor({ initial }: { initial: MapResponse }) {
         edges: s.edges.filter((e) => !edgeIds.includes(e.id) && !idSet.has(e.source) && !idSet.has(e.target)),
       };
     });
-    const what = ids.length ? `${ids.length} node${ids.length > 1 ? "s" : ""}` : `${edgeIds.length} connection${edgeIds.length > 1 ? "s" : ""}`;
-    toast.info(`Deleted ${what}`, { label: "Undo", run: () => store.getState().undo() });
+    const what = ids.length ? tp(ids.length, "# node", "# nodes") : tp(edgeIds.length, "# connection", "# connections");
+    toast.info(tr("Deleted {what}", { what }), { label: tr("Undo"), run: () => store.getState().undo() });
   }, [store]);
 
   const duplicate = useCallback((ids: string[]) => {
@@ -258,14 +259,14 @@ function Editor({ initial }: { initial: MapResponse }) {
   const groupSelection = useCallback(() => {
     const s = store.getState();
     const sel = s.nodes.filter((n) => n.selected && !n.parentId && n.type !== "group");
-    if (!sel.length) return toast.info("Select nodes to group (shift-drag to box-select)");
+    if (!sel.length) return toast.info(tr("Select nodes to group (shift-drag to box-select)"));
     const xs = sel.map((n) => n.position.x), ys = sel.map((n) => n.position.y);
     const x2 = sel.map((n) => n.position.x + (n.measured?.width ?? 220)), y2 = sel.map((n) => n.position.y + (n.measured?.height ?? 64));
     const gx = Math.min(...xs) - 28, gy = Math.min(...ys) - 44;
     const gid = uid("n_");
     const group: MindNode = {
       id: gid, type: "group", position: { x: gx, y: gy }, width: Math.max(...x2) - gx + 28, height: Math.max(...y2) - gy + 28, zIndex: -1,
-      data: { ...newNode(gid, { x: 0, y: 0 }).data, kind: "GROUP", title: "Group" },
+      data: { ...newNode(gid, { x: 0, y: 0 }).data, kind: "GROUP", title: tr("Group") },
     };
     const selIds = new Set(sel.map((n) => n.id));
     s.commit((st) => ({
@@ -301,7 +302,7 @@ function Editor({ initial }: { initial: MapResponse }) {
     try {
       await patch(`/api/tasks/${task.id}`, { status });
       invalidate("/api/tasks", "/api/dashboard", "/api/goals");
-      if (status === "DONE") toast.success(`Completed “${task.title}”`);
+      if (status === "DONE") toast.success(tr("Completed “{title}”", { title: task.title }));
       refreshLinked().catch(() => {});
     } catch (e) { apply(task.status); toast.error(e); }
   }, [store, refreshLinked]);
@@ -342,7 +343,7 @@ function Editor({ initial }: { initial: MapResponse }) {
         await flush();
         await post(`/api/maps/${mapId}/nodes/${nodeId}/move`, { targetMapId: target });
         store.getState().reset(store.getState().nodes.filter((n) => n.id !== nodeId), store.getState().edges.filter((e) => e.source !== nodeId && e.target !== nodeId));
-        toast.success("Node moved", { label: "Open map", run: () => router.push(`/maps/${target}?node=${nodeId}`) });
+        toast.success(tr("Node moved"), { label: tr("Open map"), run: () => router.push(`/maps/${target}?node=${nodeId}`) });
       } catch (e) { toast.error(e); }
     },
     select: (id) => selectNode(id),
@@ -354,7 +355,7 @@ function Editor({ initial }: { initial: MapResponse }) {
   const onConnect = useCallback((c: Connection) => {
     if (c.source === c.target) return;
     const s = store.getState();
-    if (s.edges.some((e) => (e.source === c.source && e.target === c.target) || (e.source === c.target && e.target === c.source))) return toast.info("These nodes are already connected");
+    if (s.edges.some((e) => (e.source === c.source && e.target === c.target) || (e.source === c.target && e.target === c.source))) return toast.info(tr("These nodes are already connected"));
     s.commit((st) => ({ edges: [...st.edges, { id: uid("e_"), source: c.source, target: c.target, sourceHandle: c.sourceHandle ?? undefined, targetHandle: c.targetHandle ?? undefined, type: "relation", data: { relation: defaultRelation, label: "", description: "", bidirectional: false } }] }));
   }, [store, defaultRelation]);
 
@@ -383,6 +384,23 @@ function Editor({ initial }: { initial: MapResponse }) {
     setMatchIdx(i);
     selectNode(matches[i]);
   };
+
+  /* ---------------- guided tour hooks ---------------- */
+  useEffect(() => {
+    const onTour = (e: Event) => {
+      const action = (e as CustomEvent<string>).detail;
+      const s = store.getState();
+      if (action === "select-first-node") {
+        const targets = new Set(s.edges.map((x) => x.target));
+        const first = s.nodes.find((n) => n.type !== "group" && !targets.has(n.id)) ?? s.nodes.find((n) => n.type !== "group");
+        if (first && !s.nodes.some((n) => n.selected && n.id === first.id)) selectNode(first.id);
+        setPanelOpen(true);
+      }
+      if (action === "deselect") s.set((st) => ({ nodes: st.nodes.map((n) => (n.selected ? { ...n, selected: false } : n)) }));
+    };
+    window.addEventListener("nodera:tour", onTour);
+    return () => window.removeEventListener("nodera:tour", onTour);
+  }, [store, selectNode]);
 
   /* ---------------- keyboard ---------------- */
   useEffect(() => {
@@ -437,7 +455,7 @@ function Editor({ initial }: { initial: MapResponse }) {
 
   return (
     <MapCtx.Provider value={ctx}>
-      <div ref={wrapper} tabIndex={-1} className="absolute inset-0 outline-none" onDoubleClick={onPaneDoubleClick}>
+      <div ref={wrapper} data-tour="map-canvas" tabIndex={-1} className="absolute inset-0 outline-none" onDoubleClick={onPaneDoubleClick}>
         <ReactFlow<MindNode, RelationEdge>
           nodes={viewNodes}
           edges={viewEdges}
@@ -472,20 +490,20 @@ function Editor({ initial }: { initial: MapResponse }) {
           <Controls position="bottom-left" showInteractive={false} />
           {showMinimap && isDesktop && (
             <MiniMap position="bottom-right" pannable zoomable maskColor="rgba(120,120,140,0.12)" nodeStrokeWidth={2}
-              nodeColor={(n) => (n as MindNode).data.color || KIND_META[(n as MindNode).data.kind]?.color || "#999"} style={showPanel ? { right: 352 } : undefined} />
+              nodeColor={(n) => (n as MindNode).data.color || KIND_META[(n as MindNode).data.kind]?.color || "#999"} style={{ bottom: 80, ...(showPanel ? { right: 352 } : {}) }} />
           )}
         </ReactFlow>
 
         {/* Top toolbar */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start gap-2 p-3">
           <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-border bg-surface/95 p-1 shadow-card backdrop-blur">
-            <Link href="/maps" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-text" aria-label="Back to maps"><ArrowLeft className="size-4" /></Link>
-            <input value={title} onChange={(e) => changeTitle(e.target.value)} className="w-36 sm:w-56 rounded-md bg-transparent px-1.5 py-1 text-sm font-semibold outline-none hover:bg-surface-2 focus:bg-surface-2" aria-label="Map title" />
-            <SaveIndicator state={saveState} onRetry={() => void flush()} />
+            <Link href="/maps" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-text" aria-label={tr("Back to maps")}><ArrowLeft className="size-4" /></Link>
+            <input value={title} onChange={(e) => changeTitle(e.target.value)} className="w-36 sm:w-56 rounded-md bg-transparent px-1.5 py-1 text-sm font-semibold outline-none hover:bg-surface-2 focus:bg-surface-2" aria-label={tr("Map title")} />
+            <span data-tour="map-save"><SaveIndicator state={saveState} onRetry={() => void flush()} /></span>
           </div>
           <div className="pointer-events-auto flex items-center gap-0.5 rounded-xl border border-border bg-surface/95 p-1 shadow-card backdrop-blur">
             <Popover trigger={({ toggle }) => (
-              <Tooltip label="Add node (N, or double-click canvas)" side="bottom"><Button size="sm" variant="primary" onClick={toggle}><Plus className="size-4" /><span className="hidden sm:inline">Add</span><ChevronDown className="size-3 opacity-70" /></Button></Tooltip>
+              <Tooltip label={tr("Add node (N, or double-click canvas)")} side="bottom"><Button data-tour="map-add" size="sm" variant="primary" onClick={toggle}><Plus className="size-4" /><span className="hidden sm:inline">{tr("Add")}</span><ChevronDown className="size-3 opacity-70" /></Button></Tooltip>
             )}>
               {(close) => (Object.keys(KIND_META) as NodeKind[]).filter((k) => k !== "GROUP").map((k) => (
                 <MenuItem key={k} icon={<span>{KIND_META[k].icon}</span>} onClick={() => {
@@ -498,8 +516,8 @@ function Editor({ initial }: { initial: MapResponse }) {
               ))}
             </Popover>
             <Popover trigger={({ toggle }) => (
-              <Tooltip label="Type for new connections" side="bottom">
-                <button onClick={toggle} className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium hover:bg-surface-2" style={{ color: RELATION_META[defaultRelation].color }}>
+              <Tooltip label={tr("Type for new connections")} side="bottom">
+                <button data-tour="map-relation" onClick={toggle} className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium hover:bg-surface-2" style={{ color: RELATION_META[defaultRelation].color }}>
                   <svg width="18" height="6" aria-hidden><line x1="0" y1="3" x2="18" y2="3" stroke="currentColor" strokeWidth="2" strokeDasharray={RELATION_META[defaultRelation].dashed ? "4 3" : undefined} /></svg>
                   <span className="hidden md:inline">{RELATION_META[defaultRelation].label}</span><ChevronDown className="size-3" />
                 </button>
@@ -510,40 +528,40 @@ function Editor({ initial }: { initial: MapResponse }) {
               ))}
             </Popover>
             <span className="mx-0.5 h-5 w-px bg-border" />
-            <Tooltip label="Undo (⌘Z)" side="bottom"><Button variant="ghost" size="icon-sm" disabled={!canUndo} onClick={() => store.getState().undo()} aria-label="Undo"><Undo2 className="size-4" /></Button></Tooltip>
-            <Tooltip label="Redo (⇧⌘Z)" side="bottom"><Button variant="ghost" size="icon-sm" disabled={!canRedo} onClick={() => store.getState().redo()} aria-label="Redo"><Redo2 className="size-4" /></Button></Tooltip>
+            <span data-tour="map-tools" className="flex items-center gap-0.5"><Tooltip label={tr("Undo (⌘Z)")} side="bottom"><Button variant="ghost" size="icon-sm" disabled={!canUndo} onClick={() => store.getState().undo()} aria-label={tr("Undo")}><Undo2 className="size-4" /></Button></Tooltip>
+            <Tooltip label={tr("Redo (⇧⌘Z)")} side="bottom"><Button variant="ghost" size="icon-sm" disabled={!canRedo} onClick={() => store.getState().redo()} aria-label={tr("Redo")}><Redo2 className="size-4" /></Button></Tooltip>
             <span className="mx-0.5 h-5 w-px bg-border" />
-            <Popover trigger={({ toggle }) => <Tooltip label="Auto-arrange" side="bottom"><Button variant="ghost" size="icon-sm" onClick={toggle} aria-label="Auto-arrange"><LayoutGrid className="size-4" /></Button></Tooltip>}>
+            <Popover trigger={({ toggle }) => <Tooltip label={tr("Auto-arrange")} side="bottom"><Button variant="ghost" size="icon-sm" onClick={toggle} aria-label={tr("Auto-arrange")}><LayoutGrid className="size-4" /></Button></Tooltip>}>
               {(close) => (
                 <>
-                  <MenuItem onClick={() => { close(); layout("LR"); }}>Arrange left → right</MenuItem>
-                  <MenuItem onClick={() => { close(); layout("TB"); }}>Arrange top → bottom</MenuItem>
+                  <MenuItem onClick={() => { close(); layout("LR"); }}>{tr("Arrange left → right")}</MenuItem>
+                  <MenuItem onClick={() => { close(); layout("TB"); }}>{tr("Arrange top → bottom")}</MenuItem>
                 </>
               )}
             </Popover>
-            <Tooltip label="Group selection (⌘G)" side="bottom"><Button variant="ghost" size="icon-sm" onClick={groupSelection} aria-label="Group selection"><Group className="size-4" /></Button></Tooltip>
-            <Tooltip label="Search (⌘F)" side="bottom"><Button variant="ghost" size="icon-sm" onClick={() => { setSearchOpen(!searchOpen); setTimeout(() => searchInput.current?.focus(), 10); }} aria-label="Search map"><Search className="size-4" /></Button></Tooltip>
-            <Popover align="end" className="w-64" trigger={({ toggle }) => <Button variant="ghost" size="icon-sm" onClick={toggle} aria-label="More"><MoreHorizontal className="size-4" /></Button>}>
+            <Tooltip label={tr("Group selection (⌘G)")} side="bottom"><Button variant="ghost" size="icon-sm" onClick={groupSelection} aria-label={tr("Group selection")}><Group className="size-4" /></Button></Tooltip>
+            <Tooltip label={tr("Search (⌘F)")} side="bottom"><Button variant="ghost" size="icon-sm" onClick={() => { setSearchOpen(!searchOpen); setTimeout(() => searchInput.current?.focus(), 10); }} aria-label={tr("Search map")}><Search className="size-4" /></Button></Tooltip></span>
+            <Popover align="end" className="w-64" trigger={({ toggle }) => <Button data-tour="map-more" variant="ghost" size="icon-sm" onClick={toggle} aria-label={tr("More")}><MoreHorizontal className="size-4" /></Button>}>
               {(close) => (
                 <>
-                  <MenuItem icon={<MapIcon />} onClick={() => { setShowMinimap(!showMinimap); close(); }}>{showMinimap ? "Hide minimap" : "Show minimap"}</MenuItem>
-                  <MenuItem icon={<Waves />} onClick={() => { setAnimate(!animate); close(); }}>{animate ? "Stop flow animation" : "Animate flows"}</MenuItem>
-                  <MenuItem icon={<BoxSelect />} onClick={() => { close(); rf.fitView({ duration: 400, padding: 0.15 }); }}>Fit to screen</MenuItem>
-                  <MenuItem icon={<Plus />} onClick={async () => { close(); try { await flush(); const { map } = await post<{ map: { id: string } }>(`/api/maps/${mapId}/duplicate`); router.push(`/maps/${map.id}`); } catch (e) { toast.error(e); } }}>Duplicate map</MenuItem>
+                  <MenuItem icon={<MapIcon />} onClick={() => { setShowMinimap(!showMinimap); close(); }}>{showMinimap ? tr("Hide minimap") : tr("Show minimap")}</MenuItem>
+                  <MenuItem icon={<Waves />} onClick={() => { setAnimate(!animate); close(); }}>{animate ? tr("Stop flow animation") : tr("Animate flows")}</MenuItem>
+                  <MenuItem icon={<BoxSelect />} onClick={() => { close(); rf.fitView({ duration: 400, padding: 0.15 }); }}>{tr("Fit to screen")}</MenuItem>
+                  <MenuItem icon={<Plus />} onClick={async () => { close(); try { await flush(); const { map } = await post<{ map: { id: string } }>(`/api/maps/${mapId}/duplicate`); router.push(`/maps/${map.id}`); } catch (e) { toast.error(e); } }}>{tr("Duplicate map")}</MenuItem>
                   <MenuSeparator />
-                  <div className="px-2.5 py-2"><p className="mb-1.5 text-[11px] font-medium uppercase text-muted">Connection types</p><LegendPanel /></div>
+                  <div className="px-2.5 py-2"><p className="mb-1.5 text-[11px] font-medium uppercase text-muted">{tr("Connection types")}</p><LegendPanel /></div>
                   <MenuSeparator />
                   <div className="space-y-1 px-2.5 py-2 text-[11px] text-muted">
-                    <p><Kbd>Tab</Kbd> child · <Kbd>↵</Kbd> sibling · <Kbd>F2</Kbd> rename</p>
-                    <p><Kbd>Space</Kbd> collapse · <Kbd>⌘D</Kbd> duplicate · <Kbd>⌫</Kbd> delete</p>
-                    <p><Kbd>Shift</Kbd>+drag box-select · <Kbd>⌘G</Kbd> group</p>
+                    <p><Kbd>{tr("Tab")}</Kbd>{" "}{tr("child ·")}{" "}<Kbd>↵</Kbd>{" "}{tr("sibling ·")}{" "}<Kbd>F2</Kbd> rename</p>
+                    <p><Kbd>{tr("Space")}</Kbd>{" "}{tr("collapse ·")}{" "}<Kbd>{tr("⌘D")}</Kbd>{" "}{tr("duplicate ·")}{" "}<Kbd>⌫</Kbd> delete</p>
+                    <p><Kbd>{tr("Shift")}</Kbd>{tr("+drag box-select ·")}{" "}<Kbd>{tr("⌘G")}</Kbd> group</p>
                   </div>
                   <MenuSeparator />
                   <MenuItem danger onClick={async () => {
                     close();
-                    if (!(await confirm({ title: "Archive this map?", body: "Archived maps can be restored from the Mind Maps page.", confirmLabel: "Archive" }))) return;
+                    if (!(await confirm({ title: tr("Archive this map?"), body: tr("Archived maps can be restored from the Mind Maps page."), confirmLabel: tr("Archive") }))) return;
                     await flush(); await patch(`/api/maps/${mapId}`, { archived: true }); router.push("/maps");
-                  }}>Archive map</MenuItem>
+                  }}>{tr("Archive map")}</MenuItem>
                 </>
               )}
             </Popover>
@@ -552,11 +570,11 @@ function Editor({ initial }: { initial: MapResponse }) {
           {searchOpen && (
             <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-border bg-surface/95 p-1 pl-2.5 shadow-card backdrop-blur">
               <Search className="size-3.5 text-muted" />
-              <input ref={searchInput} value={search} placeholder="Find in map…" className="w-40 bg-transparent text-sm outline-none"
+              <input ref={searchInput} value={search} placeholder={tr("Find in map…")} className="w-40 bg-transparent text-sm outline-none"
                 onChange={(e) => { store.getState().set(() => ({ search: e.target.value })); setMatchIdx(-1); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); gotoMatch(e.shiftKey ? -1 : 1); } if (e.key === "Escape") { store.getState().set(() => ({ search: "" })); setSearchOpen(false); } }} />
               <span className="text-xs tabular text-muted">{search ? `${matches.length ? Math.max(1, matchIdx + 1) : 0}/${matches.length}` : ""}</span>
-              <Button variant="ghost" size="icon-sm" aria-label="Close search" onClick={() => { store.getState().set(() => ({ search: "" })); setSearchOpen(false); }}><X className="size-3.5" /></Button>
+              <Button variant="ghost" size="icon-sm" aria-label={tr("Close search")} onClick={() => { store.getState().set(() => ({ search: "" })); setSearchOpen(false); }}><X className="size-3.5" /></Button>
             </div>
           )}
         </div>
@@ -564,25 +582,25 @@ function Editor({ initial }: { initial: MapResponse }) {
         {selectedNodes.length > 1 && (
           <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-border bg-surface p-1 shadow-pop animate-pop-in">
             <span className="px-2 text-xs font-medium text-muted">{selectedNodes.length} selected</span>
-            <Button size="sm" variant="ghost" onClick={groupSelection}><Group className="size-3.5" /> Group</Button>
-            {selectedNodes.some((n) => n.type === "group") && <Button size="sm" variant="ghost" onClick={() => selectedNodes.filter((n) => n.type === "group").forEach((g) => ungroup(g.id))}><Ungroup className="size-3.5" /> Ungroup</Button>}
-            <Button size="sm" variant="ghost" onClick={() => duplicate(selectedNodes.map((n) => n.id))}>Duplicate</Button>
-            <Button size="sm" variant="ghost" className="text-danger" onClick={() => remove(selectedNodes.map((n) => n.id), selectedEdges.map((e) => e.id))}>Delete</Button>
+            <Button size="sm" variant="ghost" onClick={groupSelection}><Group className="size-3.5" />{" "}{tr("Group")}</Button>
+            {selectedNodes.some((n) => n.type === "group") && <Button size="sm" variant="ghost" onClick={() => selectedNodes.filter((n) => n.type === "group").forEach((g) => ungroup(g.id))}><Ungroup className="size-3.5" />{" "}{tr("Ungroup")}</Button>}
+            <Button size="sm" variant="ghost" onClick={() => duplicate(selectedNodes.map((n) => n.id))}>{tr("Duplicate")}</Button>
+            <Button size="sm" variant="ghost" className="text-danger" onClick={() => remove(selectedNodes.map((n) => n.id), selectedEdges.map((e) => e.id))}>{tr("Delete")}</Button>
           </div>
         )}
 
         {nodes.length <= 1 && !single && (
           <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center">
-            <p className="rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-muted shadow-soft">Double-click anywhere to add a thought · drag from a node’s edge to connect or branch</p>
+            <p className="rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-muted shadow-soft">{tr("Double-click anywhere to add a thought · drag from a node’s edge to connect or branch")}</p>
           </div>
         )}
 
         {showPanel && (
-          <aside className={cn("absolute z-20 border-border bg-surface shadow-pop animate-slide-in", isDesktop ? "right-0 top-0 bottom-0 w-[340px] border-l" : "inset-x-0 bottom-0 h-[60%] rounded-t-2xl border-t")} aria-label="Details">
+          <aside data-tour="map-panel" className={cn("absolute z-20 border-border bg-surface shadow-pop animate-slide-in", isDesktop ? "right-0 top-0 bottom-0 w-[340px] border-l" : "inset-x-0 bottom-0 h-[60%] rounded-t-2xl border-t")} aria-label={tr("Details")}>
             {single && (single.type === "group" ? (
               <div className="flex h-full flex-col">
                 <NodePanel node={single} actions={panelActions} onClose={() => setPanelOpen(false)} />
-                <div className="border-t border-border p-3"><Button size="sm" className="w-full" onClick={() => ungroup(single.id)}><Ungroup className="size-3.5" /> Ungroup</Button></div>
+                <div className="border-t border-border p-3"><Button size="sm" className="w-full" onClick={() => ungroup(single.id)}><Ungroup className="size-3.5" />{" "}{tr("Ungroup")}</Button></div>
               </div>
             ) : (
               <NodePanel node={single} actions={panelActions} onClose={() => setPanelOpen(false)} />
@@ -596,8 +614,8 @@ function Editor({ initial }: { initial: MapResponse }) {
 }
 
 function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
-  if (state === "error") return <button onClick={onRetry} className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-danger hover:bg-danger-soft" title="Retry saving"><CloudOff className="size-3.5" /> Not saved</button>;
-  if (state === "saving" || state === "dirty") return <span className="flex items-center gap-1 px-1.5 text-xs text-muted"><Loader2 className="size-3 animate-spin" /> Saving</span>;
-  return <span className="flex items-center gap-1 px-1.5 text-xs text-muted"><Check className="size-3.5 text-success" /> Saved</span>;
+  if (state === "error") return <button onClick={onRetry} className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-danger hover:bg-danger-soft" title={tr("Retry saving")}><CloudOff className="size-3.5" />{" "}{tr("Not saved")}</button>;
+  if (state === "saving" || state === "dirty") return <span className="flex items-center gap-1 px-1.5 text-xs text-muted"><Loader2 className="size-3 animate-spin" />{" "}{tr("Saving")}</span>;
+  return <span className="flex items-center gap-1 px-1.5 text-xs text-muted"><Check className="size-3.5 text-success" />{" "}{tr("Saved")}</span>;
 }
 

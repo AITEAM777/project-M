@@ -1,12 +1,14 @@
 "use client";
+import { trActivity } from "@/lib/i18n/activity";
+import { tp, tr, translated } from "@/lib/i18n";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, CheckCircle2, Eye, EyeOff, Flame, Goal as GoalIcon, Lightbulb, ListTodo, Plus, Settings2, Sparkles, TriangleAlert, Workflow } from "lucide-react";
-import { format } from "date-fns";
+import {} from "date-fns";
 import { patch, useApi } from "@/lib/client/api";
 import { useMe } from "@/lib/client/hooks";
 import { toast, useUI } from "@/lib/client/store";
-import { ago, relDay, time } from "@/lib/client/format";
+import { fmt, ago, relDay, time } from "@/lib/client/format";
 import { expandRecurring, type RecurringBlock } from "@/lib/schedule";
 import { habitStats } from "@/lib/habits";
 import type { ActivityItem, Goal, Habit, Task } from "@/lib/client/types";
@@ -31,7 +33,7 @@ interface Dashboard {
   activity: ActivityItem[];
 }
 
-const WIDGETS = [
+const WIDGETS = translated([
   { id: "today", label: "Today's tasks", span: "lg:col-span-2" },
   { id: "schedule", label: "Today's schedule", span: "" },
   { id: "goals", label: "Active goals", span: "lg:col-span-2" },
@@ -42,12 +44,12 @@ const WIDGETS = [
   { id: "projects", label: "Project status", span: "" },
   { id: "maps", label: "Recent mind maps", span: "" },
   { id: "activity", label: "Activity", span: "" },
-] as const;
+] as const);
 type WidgetId = (typeof WIDGETS)[number]["id"];
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return tr(h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
 }
 
 export default function DashboardPage() {
@@ -97,20 +99,20 @@ export default function DashboardPage() {
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-muted">{format(new Date(), "EEEE, d MMMM")}</p>
+          <p className="text-sm text-muted">{fmt(new Date(), "EEEE, d MMMM")}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{greeting()}, {me.user.name.split(" ")[0]}</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant={customizing ? "primary" : "ghost"} size="sm" onClick={() => setCustomizing(!customizing)}><Settings2 className="size-4" /> {customizing ? "Done" : "Customize"}</Button>
-          <Button size="sm" onClick={() => openCreate("task")}><Plus className="size-4" /> Task</Button>
+          <Button data-tour="dash-customize" variant={customizing ? "primary" : "ghost"} size="sm" onClick={() => setCustomizing(!customizing)}><Settings2 className="size-4" /> {customizing ? tr("Done") : tr("Customize")}</Button>
+          <Button size="sm" onClick={() => openCreate("task")}><Plus className="size-4" />{" "}{tr("Task")}</Button>
         </div>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat icon={<ListTodo className="size-4" />} label="Open today" value={s.openToday} sub={`${s.doneToday} done today`} />
-        <Stat icon={<TriangleAlert className="size-4" />} label="Overdue" value={s.overdue} tone={s.overdue ? "danger" : undefined} sub={s.overdue ? "Needs attention" : "All on track"} />
-        <Stat icon={<CheckCircle2 className="size-4" />} label="Done this week" value={s.completedThisWeek} sub="completed tasks" />
-        <Stat icon={<GoalIcon className="size-4" />} label="Active goals" value={s.activeGoals} sub={`${s.notes} notes & thoughts`} />
+      <div data-tour="dash-stats" className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat icon={<ListTodo className="size-4" />} label={tr("Open today")} value={s.openToday} sub={tr("{n} done today", { n: s.doneToday })} />
+        <Stat icon={<TriangleAlert className="size-4" />} label={tr("Overdue")} value={s.overdue} tone={s.overdue ? "danger" : undefined} sub={tr(s.overdue ? "Needs attention" : "All on track")} />
+        <Stat icon={<CheckCircle2 className="size-4" />} label={tr("Done this week")} value={s.completedThisWeek} sub={tr("completed tasks")} />
+        <Stat icon={<GoalIcon className="size-4" />} label={tr("Active goals")} value={s.activeGoals} sub={tr("{n} notes & thoughts", { n: s.notes })} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -118,13 +120,13 @@ export default function DashboardPage() {
           const meta = WIDGETS.find((x) => x.id === w.id)!;
           if (w.hidden && !customizing) return null;
           return (
-            <div key={w.id} className={cn("min-w-0", meta.span, w.hidden && "opacity-50")}>
+            <div key={w.id} data-tour={`widget-${w.id}`} className={cn("min-w-0", meta.span, w.hidden && "opacity-50")}>
               {customizing && (
                 <div className="mb-1.5 flex items-center gap-1 text-xs">
                   <span className="flex-1 font-medium text-muted">{meta.label}</span>
-                  <Button size="icon-sm" variant="ghost" onClick={() => move(i, -1)} aria-label="Move up"><ArrowUp className="size-3.5" /></Button>
-                  <Button size="icon-sm" variant="ghost" onClick={() => move(i, 1)} aria-label="Move down"><ArrowDown className="size-3.5" /></Button>
-                  <Button size="icon-sm" variant="ghost" onClick={() => saveLayout(layout.map((x) => (x.id === w.id ? { ...x, hidden: !x.hidden } : x)))} aria-label={w.hidden ? "Show" : "Hide"}>
+                  <Button size="icon-sm" variant="ghost" onClick={() => move(i, -1)} aria-label={tr("Move up")}><ArrowUp className="size-3.5" /></Button>
+                  <Button size="icon-sm" variant="ghost" onClick={() => move(i, 1)} aria-label={tr("Move down")}><ArrowDown className="size-3.5" /></Button>
+                  <Button size="icon-sm" variant="ghost" onClick={() => saveLayout(layout.map((x) => (x.id === w.id ? { ...x, hidden: !x.hidden } : x)))} aria-label={w.hidden ? tr("Show") : tr("Hide")}>
                     {w.hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                   </Button>
                 </div>
@@ -153,7 +155,7 @@ function Widget({ title, href, action, children, className }: { title: string; h
     <Card className={cn("flex h-full flex-col p-4", className)}>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">{title}</h2>
-        {action ?? (href && <Link href={href} className="text-xs font-medium text-muted hover:text-accent">View all</Link>)}
+        {action ?? (href && <Link href={href} className="text-xs font-medium text-muted hover:text-accent">{tr("View all")}</Link>)}
       </div>
       <div className="flex-1">{children}</div>
     </Card>
@@ -166,16 +168,16 @@ function TodayWidget({ tasks, onChanged }: { tasks: Task[]; onChanged: () => voi
   const done = tasks.filter((t) => t.status === "DONE");
   const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
   return (
-    <Widget title="Today's tasks" href="/tasks" action={<div className="flex items-center gap-2"><span className="text-xs text-muted tabular">{done.length}/{tasks.length}</span><div className="w-20"><Progress value={pct} size="sm" /></div></div>}>
+    <Widget title={tr("Today's tasks")} href="/tasks" action={<div className="flex items-center gap-2"><span className="text-xs text-muted tabular">{done.length}/{tasks.length}</span><div className="w-20"><Progress value={pct} size="sm" /></div></div>}>
       {!tasks.length ? (
         <div className="py-6 text-center text-sm text-muted">
-          Nothing scheduled for today.
-          <div className="mt-3"><Button size="sm" onClick={() => openCreate("task")}><Plus className="size-4" /> Plan a task</Button></div>
+          {tr("Nothing scheduled for today.")}
+          <div className="mt-3"><Button size="sm" onClick={() => openCreate("task")}><Plus className="size-4" />{" "}{tr("Plan a task")}</Button></div>
         </div>
       ) : (
         <div className="-mx-2.5 max-h-[340px] overflow-y-auto">
           {open.map((t) => <TaskRow key={t.id} task={t} onChanged={onChanged} compact />)}
-          {done.length > 0 && <p className="px-2.5 pt-2 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted">Completed</p>}
+          {done.length > 0 && <p className="px-2.5 pt-2 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Completed")}</p>}
           {done.map((t) => <TaskRow key={t.id} task={t} onChanged={onChanged} compact />)}
         </div>
       )}
@@ -196,8 +198,8 @@ function ScheduleWidget({ data }: { data: Dashboard }) {
   ].sort((a, b) => a.start.getTime() - b.start.getTime());
   const now = Date.now();
   return (
-    <Widget title="Today's schedule" href="/calendar">
-      {!timed.length ? <p className="py-6 text-center text-sm text-muted">No time blocks today. <Link href="/calendar" className="text-accent">Plan your day →</Link></p> : (
+    <Widget title={tr("Today's schedule")} href="/calendar">
+      {!timed.length ? <p className="py-6 text-center text-sm text-muted">{tr("No time blocks today.")}{" "}<Link href="/calendar" className="text-accent">{tr("Plan your day →")}</Link></p> : (
         <ol className="space-y-1.5">
           {timed.map((b) => {
             const past = b.end.getTime() < now, current = b.start.getTime() <= now && b.end.getTime() >= now;
@@ -206,7 +208,7 @@ function ScheduleWidget({ data }: { data: Dashboard }) {
                 <span className="w-11 text-xs font-medium tabular text-muted">{time(b.start)}</span>
                 <span className="h-7 w-1 rounded-full" style={{ background: b.color }} />
                 <span className="min-w-0 flex-1 truncate text-sm">{b.title}</span>
-                {current && <span className="text-[10px] font-semibold uppercase text-accent">Now</span>}
+                {current && <span className="text-[10px] font-semibold uppercase text-accent">{tr("Now")}</span>}
               </li>
             );
           })}
@@ -219,9 +221,9 @@ function ScheduleWidget({ data }: { data: Dashboard }) {
 function GoalsWidget({ goals }: { goals: Goal[] }) {
   const { openCreate } = useUI();
   return (
-    <Widget title="Active goals" href="/goals">
+    <Widget title={tr("Active goals")} href="/goals">
       {!goals.length ? (
-        <EmptyState className="py-8" icon={<GoalIcon className="size-5" />} title="No active goals" body="Goals turn intentions into measurable progress." action={<Button size="sm" variant="primary" onClick={() => openCreate("goal")}>Set a goal</Button>} />
+        <EmptyState className="py-8" icon={<GoalIcon className="size-5" />} title={tr("No active goals")} body={tr("Goals turn intentions into measurable progress.")} action={<Button size="sm" variant="primary" onClick={() => openCreate("goal")}>{tr("Set a goal")}</Button>} />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {goals.map((g) => (
@@ -230,7 +232,7 @@ function GoalsWidget({ goals }: { goals: Goal[] }) {
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{g.title}</p>
                 <p className="truncate text-xs text-muted">
-                  {g.milestones.filter((m) => m.done).length}/{g.milestones.length} milestones · {g.doneTaskCount}/{g.taskCount} tasks
+                  {tr("{a}/{b} milestones · {c}/{d} tasks", { a: g.milestones.filter((m) => m.done).length, b: g.milestones.length, c: g.doneTaskCount, d: g.taskCount })}
                   {g.targetDate && ` · ${relDay(g.targetDate)}`}
                 </p>
               </div>
@@ -245,15 +247,15 @@ function GoalsWidget({ goals }: { goals: Goal[] }) {
 function UpcomingWidget({ items }: { items: Dashboard["upcoming"] }) {
   const { openTask } = useUI();
   return (
-    <Widget title="Upcoming deadlines" href="/tasks">
-      {!items.length ? <p className="py-6 text-center text-sm text-muted">No deadlines in the next two weeks.</p> : (
+    <Widget title={tr("Upcoming deadlines")} href="/tasks">
+      {!items.length ? <p className="py-6 text-center text-sm text-muted">{tr("No deadlines in the next two weeks.")}</p> : (
         <ul className="space-y-1">
           {items.map((t) => (
             <li key={t.id}>
               <button onClick={() => openTask(t.id)} className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-surface-2">
                 <span className="grid w-10 shrink-0 text-center leading-tight">
-                  <span className="text-[10px] uppercase text-muted">{format(new Date(t.dueDate), "MMM")}</span>
-                  <span className="text-base font-semibold tabular">{format(new Date(t.dueDate), "d")}</span>
+                  <span className="text-[10px] uppercase text-muted">{fmt(new Date(t.dueDate), "MMM")}</span>
+                  <span className="text-base font-semibold tabular">{fmt(new Date(t.dueDate), "d")}</span>
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm">{t.title}</span>
@@ -274,13 +276,13 @@ function ProgressWidget({ data }: { data: Dashboard }) {
   const prev7 = done.slice(-14, -7).reduce((a, b) => a + b, 0);
   const delta = last7 - prev7;
   return (
-    <Widget title="Completed tasks · last 4 weeks" href="/tasks?status=DONE">
+    <Widget title={tr("Completed tasks · last 4 weeks")} href="/tasks?status=DONE">
       <div className="mb-3 flex items-baseline gap-3">
         <span className="text-3xl font-semibold tabular tracking-tight">{last7}</span>
-        <span className="text-sm text-muted">in the last 7 days</span>
-        {(last7 > 0 || prev7 > 0) && <span className={cn("text-xs font-medium", delta >= 0 ? "text-success" : "text-warning")}>{delta >= 0 ? "▲" : "▼"} {Math.abs(delta)} vs the 7 days before</span>}
+        <span className="text-sm text-muted">{tr("in the last 7 days")}</span>
+        {(last7 > 0 || prev7 > 0) && <span className={cn("text-xs font-medium", delta >= 0 ? "text-success" : "text-warning")}>{delta >= 0 ? "▲" : "▼"} {tr("{n} vs the 7 days before", { n: Math.abs(delta) })}</span>}
       </div>
-      <DailyBars values={done} since={data.trend.since} label="Completed tasks per day" />
+      <DailyBars values={done} since={data.trend.since} label={tr("Completed tasks per day")} />
     </Widget>
   );
 }
@@ -288,8 +290,8 @@ function ProgressWidget({ data }: { data: Dashboard }) {
 function HabitsWidget({ habits }: { habits: Habit[] }) {
   const { openCreate } = useUI();
   return (
-    <Widget title="Habit consistency" href="/habits">
-      {!habits.length ? <div className="py-6 text-center text-sm text-muted">No habits yet.<div className="mt-3"><Button size="sm" onClick={() => openCreate("habit")}>Start a habit</Button></div></div> : (
+    <Widget title={tr("Habit consistency")} href="/habits">
+      {!habits.length ? <div className="py-6 text-center text-sm text-muted">{tr("No habits yet.")}<div className="mt-3"><Button size="sm" onClick={() => openCreate("habit")}>{tr("Start a habit")}</Button></div></div> : (
         <ul className="space-y-3.5">
           {habits.slice(0, 5).map((h) => {
             const st = habitStats(h, h.counts);
@@ -313,8 +315,8 @@ function HabitsWidget({ habits }: { habits: Habit[] }) {
 
 function ThoughtsWidget({ items, onCapture }: { items: Dashboard["thoughts"]; onCapture: () => void }) {
   return (
-    <Widget title="Recent thoughts" href="/thoughts" action={<Button size="xs" variant="ghost" onClick={onCapture}><Plus className="size-3" /> Capture</Button>}>
-      {!items.length ? <p className="py-6 text-center text-sm text-muted">Your captured thoughts appear here.</p> : (
+    <Widget title={tr("Recent thoughts")} href="/thoughts" action={<Button size="xs" variant="ghost" onClick={onCapture}><Plus className="size-3" />{" "}{tr("Capture")}</Button>}>
+      {!items.length ? <p className="py-6 text-center text-sm text-muted">{tr("Your captured thoughts appear here.")}</p> : (
         <ul className="space-y-1">
           {items.map((n) => (
             <li key={n.id}>
@@ -335,8 +337,8 @@ function ThoughtsWidget({ items, onCapture }: { items: Dashboard["thoughts"]; on
 
 function ProjectsWidget({ items }: { items: Dashboard["projects"] }) {
   return (
-    <Widget title="Project status" href="/projects">
-      {!items.length ? <p className="py-6 text-center text-sm text-muted">No active projects.</p> : (
+    <Widget title={tr("Project status")} href="/projects">
+      {!items.length ? <p className="py-6 text-center text-sm text-muted">{tr("No active projects.")}</p> : (
         <ul className="space-y-3">
           {items.map((p) => (
             <li key={p.id}>
@@ -358,15 +360,15 @@ function ProjectsWidget({ items }: { items: Dashboard["projects"] }) {
 
 function MapsWidget({ items }: { items: Dashboard["maps"] }) {
   return (
-    <Widget title="Recent mind maps" href="/maps">
-      {!items.length ? <p className="py-6 text-center text-sm text-muted">No maps yet.</p> : (
+    <Widget title={tr("Recent mind maps")} href="/maps">
+      {!items.length ? <p className="py-6 text-center text-sm text-muted">{tr("No maps yet.")}</p> : (
         <ul className="space-y-1">
           {items.map((m) => (
             <li key={m.id}>
               <Link href={`/maps/${m.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-surface-2">
                 <Workflow className="size-4 text-accent" />
                 <span className="min-w-0 flex-1 truncate text-sm">{m.title}</span>
-                <span className="text-xs text-muted">{m._count.nodes} nodes · {ago(m.updatedAt)}</span>
+                <span className="text-xs text-muted">{tp(m._count.nodes, "# node", "# nodes")} · {ago(m.updatedAt)}</span>
               </Link>
             </li>
           ))}
@@ -378,13 +380,13 @@ function MapsWidget({ items }: { items: Dashboard["maps"] }) {
 
 function ActivityWidget({ items }: { items: ActivityItem[] }) {
   return (
-    <Widget title="Activity" href="/timeline">
-      {!items.length ? <p className="py-6 text-center text-sm text-muted">Nothing yet.</p> : (
+    <Widget title={tr("Activity")} href="/timeline">
+      {!items.length ? <p className="py-6 text-center text-sm text-muted">{tr("Nothing yet.")}</p> : (
         <ol className="relative space-y-2.5 border-l border-border pl-4">
           {items.slice(0, 8).map((a) => (
             <li key={a.id} className="relative text-sm">
               <span className={cn("absolute -left-[21px] top-1.5 size-2 rounded-full ring-4 ring-surface", a.action === "completed" ? "bg-success" : a.action === "deleted" ? "bg-danger" : a.entityType === "ai" ? "bg-accent" : "bg-border-strong")} />
-              <p className="leading-snug">{a.entityType === "ai" && <Sparkles className="mr-1 inline size-3 text-accent" />}{a.summary}</p>
+              <p className="leading-snug">{a.entityType === "ai" && <Sparkles className="mr-1 inline size-3 text-accent" />}{trActivity(a.summary)}</p>
               <p className="text-xs text-muted">{ago(a.createdAt)}</p>
             </li>
           ))}

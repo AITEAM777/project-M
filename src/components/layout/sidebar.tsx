@@ -1,4 +1,5 @@
 "use client";
+import { tr, translated } from "@/lib/i18n";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { LogoMark } from "./logo";
 
-const NAV = [
+const NAV = translated([
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/thoughts", label: "My Thoughts", icon: Lightbulb },
   { href: "/notes", label: "Notes", icon: FileText },
@@ -29,16 +30,16 @@ const NAV = [
   { href: "/habits", label: "Habits", icon: Repeat },
   { href: "/graph", label: "Knowledge Graph", icon: Network },
   { href: "/timeline", label: "Timeline", icon: History },
-];
+]);
 
 export function Sidebar({ workspaces, onWorkspacesChange, className }: { workspaces: Workspace[]; onWorkspacesChange: (w: Workspace[]) => void; className?: string }) {
   const pathname = usePathname();
   const { data: me } = useMe();
   const ai = me?.aiAvailable && me.user.aiEnabled;
   return (
-    <aside className={cn("w-64 shrink-0 border-r border-border bg-surface flex flex-col h-dvh", className)} aria-label="Sidebar">
+    <aside className={cn("w-64 shrink-0 border-r border-border bg-surface flex flex-col h-dvh", className)} aria-label={tr("Sidebar")}>
       <WorkspaceSwitcher workspaces={workspaces} onChange={onWorkspacesChange} />
-      <nav className="px-2 pt-1 space-y-0.5" aria-label="Main">
+      <nav data-tour="sidebar" className="px-2 pt-1 space-y-0.5" aria-label={tr("Main")}>
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"));
           return (
@@ -51,14 +52,14 @@ export function Sidebar({ workspaces, onWorkspacesChange, className }: { workspa
         })}
         {ai && (
           <Link href="/assistant" className={cn("flex items-center gap-2.5 h-8 px-2.5 rounded-lg text-[13.5px] transition-colors", pathname === "/assistant" ? "bg-accent-soft text-accent font-medium" : "text-text-2 hover:bg-surface-2 hover:text-text")}>
-            <Sparkles className="size-[17px]" strokeWidth={1.8} /> AI Assistant
+            <Sparkles className="size-[17px]" strokeWidth={1.8} />{" "}{tr("AI Assistant")}
           </Link>
         )}
       </nav>
       <Folders />
       <div className="border-t border-border p-2">
         <Link href="/settings" className={cn("flex items-center gap-2.5 h-8 px-2.5 rounded-lg text-[13.5px]", pathname === "/settings" ? "bg-accent-soft text-accent font-medium" : "text-text-2 hover:bg-surface-2")}>
-          <Settings className="size-[17px]" strokeWidth={1.8} /> Settings
+          <Settings className="size-[17px]" strokeWidth={1.8} />{" "}{tr("Settings")}
         </Link>
       </div>
     </aside>
@@ -88,10 +89,10 @@ function WorkspaceSwitcher({ workspaces, onChange }: { workspaces: Workspace[]; 
       <Popover
         className="w-60"
         trigger={({ toggle }) => (
-          <button onClick={toggle} className="w-full flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-surface-2 text-left" aria-label="Switch workspace">
+          <button onClick={toggle} className="w-full flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-surface-2 text-left" aria-label={tr("Switch workspace")}>
             <LogoMark className="size-7 shrink-0" />
             <span className="min-w-0 flex-1">
-              <span className="block text-[11px] text-muted leading-tight">Nodera</span>
+              <span className="block text-[11px] text-muted leading-tight">{tr("Nodera")}</span>
               <span className="block truncate text-sm font-semibold leading-tight">{current.icon} {current.name}</span>
             </span>
             <ChevronDown className="size-4 text-muted" />
@@ -100,20 +101,20 @@ function WorkspaceSwitcher({ workspaces, onChange }: { workspaces: Workspace[]; 
       >
         {(close) => (
           <>
-            <p className="px-2.5 pt-1.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted">Workspaces</p>
+            <p className="px-2.5 pt-1.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Workspaces")}</p>
             {workspaces.map((w) => (
               <MenuItem key={w.id} active={w.id === current.id} onClick={() => { set(w.id); close(); router.push("/dashboard"); }} icon={<span>{w.icon}</span>}>
                 {w.name}
               </MenuItem>
             ))}
             <MenuSeparator />
-            <MenuItem icon={<Plus />} onClick={() => { close(); setCreating(true); }}>New workspace</MenuItem>
+            <MenuItem icon={<Plus />} onClick={() => { close(); setCreating(true); }}>{tr("New workspace")}</MenuItem>
           </>
         )}
       </Popover>
-      <Dialog open={creating} onClose={() => setCreating(false)} title="New workspace" description="Workspaces keep separate areas (e.g. Personal, Work) completely apart." size="sm"
-        footer={<><Button variant="ghost" onClick={() => setCreating(false)}>Cancel</Button><Button variant="primary" loading={busy} disabled={!name.trim()} onClick={create}>Create</Button></>}>
-        <Field label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && name.trim() && create()} placeholder="Work" autoFocus /></Field>
+      <Dialog open={creating} onClose={() => setCreating(false)} title={tr("New workspace")} description={tr("Workspaces keep separate areas (e.g. Personal, Work) completely apart.")} size="sm"
+        footer={<><Button variant="ghost" onClick={() => setCreating(false)}>{tr("Cancel")}</Button><Button variant="primary" loading={busy} disabled={!name.trim()} onClick={create}>{tr("Create")}</Button></>}>
+        <Field label={tr("Name")}><Input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && name.trim() && create()} placeholder={tr("Work")} autoFocus /></Field>
       </Dialog>
     </div>
   );
@@ -133,23 +134,23 @@ function Folders() {
     <div className="mt-3 flex-1 min-h-0 overflow-y-auto px-2 pb-3">
       {favorites.length > 0 && (
         <div className="mb-2">
-          <p className="px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">Favorites</p>
+          <p className="px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Favorites")}</p>
           {favorites.map((f) => <FolderRow key={`fav-${f.id}`} folder={f} tree={tree} depth={0} onChange={() => mutate()} flat />)}
         </div>
       )}
       <div className="group flex items-center justify-between px-2.5 py-1">
         <button onClick={() => setOpen(!open)} className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted hover:text-text">
-          {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />} Folders
+          {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}{" "}{tr("Folders")}
         </button>
         <span className="flex items-center gap-0.5">
-          <Link href="/folders" className="p-1 rounded text-muted hover:bg-surface-2 hover:text-text" aria-label="All folders"><Waypoints className="size-3.5" /></Link>
-          <button onClick={() => openCreate("folder")} className="p-1 rounded text-muted hover:bg-surface-2 hover:text-text" aria-label="New folder"><FolderPlus className="size-3.5" /></button>
+          <Link href="/folders" className="p-1 rounded text-muted hover:bg-surface-2 hover:text-text" aria-label={tr("All folders")}><Waypoints className="size-3.5" /></Link>
+          <button onClick={() => openCreate("folder")} className="p-1 rounded text-muted hover:bg-surface-2 hover:text-text" aria-label={tr("New folder")}><FolderPlus className="size-3.5" /></button>
         </span>
       </div>
       {open && (
         <div className="space-y-px">
           {(tree.get(null) ?? []).map((f) => <FolderRow key={f.id} folder={f} tree={tree} depth={0} onChange={() => mutate()} />)}
-          {data && !data.folders.length && <p className="px-2.5 py-2 text-xs text-muted">No folders yet.</p>}
+          {data && !data.folders.length && <p className="px-2.5 py-2 text-xs text-muted">{tr("No folders yet.")}</p>}
         </div>
       )}
     </div>
@@ -169,13 +170,13 @@ function FolderRow({ folder, tree, depth, onChange, flat }: { folder: Folder; tr
     try { await patch(`/api/folders/${folder.id}`, body); onChange(); invalidate("/api/folders"); if (msg) toast.success(msg); } catch (e) { toast.error(e); }
   };
   const remove = async () => {
-    if (!(await confirm({ title: `Delete “${folder.name}”?`, body: "Subfolders are deleted too. Notes, maps, projects and goals inside are kept and moved out of the folder.", confirmLabel: "Delete folder", danger: true }))) return;
-    try { await del(`/api/folders/${folder.id}`); onChange(); if (active) router.push("/folders"); toast.success("Folder deleted"); } catch (e) { toast.error(e); }
+    if (!(await confirm({ title: tr("Delete “{title}”?", { title: folder.name }), body: tr("Subfolders are deleted too. Notes, maps, projects and goals inside are kept and moved out of the folder."), confirmLabel: tr("Delete folder"), danger: true }))) return;
+    try { await del(`/api/folders/${folder.id}`); onChange(); if (active) router.push("/folders"); toast.success(tr("Folder deleted")); } catch (e) { toast.error(e); }
   };
   return (
     <div>
       <div className={cn("group flex items-center h-8 rounded-lg pr-1 text-[13.5px]", active ? "bg-accent-soft text-accent font-medium" : "text-text-2 hover:bg-surface-2")} style={{ paddingLeft: 4 + depth * 14 }}>
-        <button onClick={() => setExpanded(!expanded)} className={cn("p-0.5 rounded text-muted", !kids.length && "invisible")} aria-label={expanded ? "Collapse" : "Expand"}>
+        <button onClick={() => setExpanded(!expanded)} className={cn("p-0.5 rounded text-muted", !kids.length && "invisible")} aria-label={expanded ? tr("Collapse") : tr("Expand")}>
           {expanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
         </button>
         {renaming ? (
@@ -189,16 +190,16 @@ function FolderRow({ folder, tree, depth, onChange, flat }: { folder: Folder; tr
           </Link>
         )}
         <Popover align="end" trigger={({ toggle }) => (
-          <button onClick={toggle} className="p-1 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted hover:text-text" aria-label="Folder actions"><MoreHorizontal className="size-4" /></button>
+          <button onClick={toggle} className="p-1 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted hover:text-text" aria-label={tr("Folder actions")}><MoreHorizontal className="size-4" /></button>
         )}>
           {(close) => (
             <>
-              <MenuItem icon={<FolderPlus />} onClick={() => { close(); openCreate("folder", { parentId: folder.id }); setExpanded(true); }}>New subfolder</MenuItem>
-              <MenuItem icon={<Pencil />} onClick={() => { close(); setRenaming(true); }}>Rename</MenuItem>
-              <MenuItem icon={<Star />} onClick={() => { close(); update({ favorite: !folder.favorite }); }}>{folder.favorite ? "Remove from favorites" : "Add to favorites"}</MenuItem>
-              <MenuItem icon={<Archive />} onClick={() => { close(); update({ archived: true }, "Folder archived — restore it from All Folders"); }}>Archive</MenuItem>
+              <MenuItem icon={<FolderPlus />} onClick={() => { close(); openCreate("folder", { parentId: folder.id }); setExpanded(true); }}>{tr("New subfolder")}</MenuItem>
+              <MenuItem icon={<Pencil />} onClick={() => { close(); setRenaming(true); }}>{tr("Rename")}</MenuItem>
+              <MenuItem icon={<Star />} onClick={() => { close(); update({ favorite: !folder.favorite }); }}>{folder.favorite ? tr("Remove from favorites") : tr("Add to favorites")}</MenuItem>
+              <MenuItem icon={<Archive />} onClick={() => { close(); update({ archived: true }, "Folder archived — restore it from All Folders"); }}>{tr("Archive")}</MenuItem>
               <MenuSeparator />
-              <MenuItem icon={<Trash2 />} danger onClick={() => { close(); remove(); }}>Delete</MenuItem>
+              <MenuItem icon={<Trash2 />} danger onClick={() => { close(); remove(); }}>{tr("Delete")}</MenuItem>
             </>
           )}
         </Popover>

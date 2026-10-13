@@ -49,6 +49,7 @@ export type SessionUser = {
   name: string;
   plan: string;
   theme: string;
+  locale: string;
   aiEnabled: boolean;
   onboardedAt: Date | null;
 };
@@ -60,7 +61,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await prisma.session.findUnique({
     where: { id: hashToken(token) },
     include: {
-      user: { select: { id: true, email: true, name: true, plan: true, theme: true, aiEnabled: true, onboardedAt: true } },
+      user: { select: { id: true, email: true, name: true, plan: true, theme: true, locale: true, aiEnabled: true, onboardedAt: true } },
     },
   });
   if (!session) return null;

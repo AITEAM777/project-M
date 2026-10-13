@@ -1,4 +1,5 @@
 "use client";
+import { getLocale, tr } from "@/lib/i18n";
 import { memo, useEffect, useRef, useState } from "react";
 import { Handle, NodeResizer, Position, useStore as useFlowStore, type NodeProps } from "@xyflow/react";
 import { ChevronRight, FileText, Paperclip, Plus } from "lucide-react";
@@ -50,7 +51,7 @@ function InlineTitle({ id, title }: { id: string; title: string }) {
         if (e.key === "Escape") actions.finishEdit(id, null);
       }}
       className="nodrag nowheel w-full resize-none bg-transparent text-[13.5px] font-medium leading-snug outline-none"
-      aria-label="Node title"
+      aria-label={tr("Node title")}
     />
   );
 }
@@ -76,7 +77,7 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
     return (
       <div className={cn("rounded-lg border bg-[var(--surface)] px-3 py-2", selected ? "border-[var(--accent)] ring-3 ring-[var(--ring)]" : "border-[var(--border)]", searching && !data.match && "opacity-25")} style={{ width: 220, borderLeft: `4px solid ${color}` }}>
         <Handles />
-        <p className="truncate text-[15px] font-semibold">{data.title || "Untitled"}</p>
+        <p className="truncate text-[15px] font-semibold">{data.title || tr("Untitled")}</p>
       </div>
     );
   }
@@ -106,7 +107,7 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
             <button
               className={cn("nodrag mt-0.5 grid size-[17px] shrink-0 place-items-center rounded-[5px] border transition-colors", task.status === "DONE" ? "border-[var(--success)] bg-[var(--success)] text-white" : "border-[var(--border-strong)] hover:border-[var(--accent)]")}
               onClick={(e) => { e.stopPropagation(); if (!readOnly) actions.toggleTask(id); }}
-              aria-label={task.status === "DONE" ? "Mark task as not done" : "Mark task as done"}
+              aria-label={task.status === "DONE" ? tr("Mark task as not done") : tr("Mark task as done")}
             >
               {task.status === "DONE" && <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3.5 8.5l3 3 6-7" /></svg>}
             </button>
@@ -118,17 +119,17 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
               <InlineTitle id={id} title={data.title} />
             ) : (
               <p className={cn("text-[13.5px] font-medium leading-snug break-words", !data.title && "text-[var(--muted)] italic", task?.status === "DONE" && "line-through")}>
-                {data.title || "Untitled"}
+                {data.title || tr("Untitled")}
               </p>
             )}
           </div>
         </div>
         <div className={cn("mt-1.5 flex flex-wrap items-center gap-1.5 text-[10.5px] text-[var(--muted)]", isCircle && "justify-center")}>
           <span className="font-medium uppercase tracking-wide" style={{ color }}>{meta.label}</span>
-          {l?.note && <FileText className="size-3" aria-label="Has note" />}
+          {l?.note && <FileText className="size-3" aria-label={tr("Has note")} />}
           {!!data.attachmentCount && <span className="inline-flex items-center gap-0.5"><Paperclip className="size-3" />{data.attachmentCount}</span>}
           {data.tags.slice(0, 2).map((t) => <span key={t}>#{t}</span>)}
-          {task?.dueDate && <span>· due {new Date(task.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>}
+          {task?.dueDate && <span>· {tr("due {date}", { date: new Date(task.dueDate).toLocaleDateString(getLocale() === "uk" ? "uk-UA" : "en-US", { month: "short", day: "numeric" }) })}</span>}
         </div>
         {progress !== undefined && (
           <div className="mt-2 flex items-center gap-2">
@@ -141,13 +142,13 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
         <button
           onClick={(e) => { e.stopPropagation(); actions.toggleCollapse(id); }}
           className={cn("nodrag absolute -right-3 top-1/2 -translate-y-1/2 z-10 grid h-6 min-w-6 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-1 text-[10px] font-semibold text-[var(--muted)] shadow-sm hover:text-[var(--text)]", !data.collapsed && "opacity-0 group-hover:opacity-100")}
-          aria-label={data.collapsed ? "Expand branch" : "Collapse branch"}
+          aria-label={data.collapsed ? tr("Expand branch") : tr("Collapse branch")}
         >
           {data.collapsed ? `+${data.hiddenDescendants ?? ""}` : <ChevronRight className="size-3.5 rotate-180" />}
         </button>
       )}
       {selected && !readOnly && !editing && (
-        <button onClick={(e) => { e.stopPropagation(); actions.addChild(id); }} className="nodrag absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 grid size-6 place-items-center rounded-full bg-[var(--accent)] text-white shadow-md" aria-label="Add connected node (Tab)">
+        <button onClick={(e) => { e.stopPropagation(); actions.addChild(id); }} className="nodrag absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 grid size-6 place-items-center rounded-full bg-[var(--accent)] text-white shadow-md" aria-label={tr("Add connected node (Tab)")}>
           <Plus className="size-3.5" />
         </button>
       )}

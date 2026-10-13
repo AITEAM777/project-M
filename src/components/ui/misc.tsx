@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Info, XCircle } from "lucide-react";
@@ -76,9 +77,9 @@ export function Kbd({ children }: { children: React.ReactNode }) {
   return <kbd className="inline-flex items-center rounded border border-border bg-surface-2 px-1 font-mono text-[10px] text-muted">{children}</kbd>;
 }
 
-export function Tabs<T extends string>({ value, onChange, items, className }: { value: T; onChange: (v: T) => void; items: { value: T; label: React.ReactNode }[]; className?: string }) {
+export function Tabs<T extends string>({ value, onChange, items, className, "data-tour": tour }: { value: T; onChange: (v: T) => void; items: { value: T; label: React.ReactNode }[]; className?: string; "data-tour"?: string }) {
   return (
-    <div role="tablist" className={cn("inline-flex p-0.5 rounded-lg bg-surface-2 border border-border", className)}>
+    <div role="tablist" data-tour={tour} className={cn("inline-flex p-0.5 rounded-lg bg-surface-2 border border-border", className)}>
       {items.map((i) => (
         <button
           key={i.value}
@@ -177,7 +178,7 @@ export function MenuSeparator() {
 export function Toaster() {
   const { toasts, dismiss } = useToasts();
   return (
-    <div className="fixed bottom-4 right-4 z-[70] flex flex-col gap-2 w-[min(380px,calc(100vw-2rem))]" aria-live="polite">
+    <div className="fixed bottom-20 right-4 z-[70] flex flex-col gap-2 w-[min(380px,calc(100vw-2rem))]" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className="flex items-start gap-2.5 rounded-xl border border-border bg-surface p-3 shadow-pop animate-slide-in text-sm">
           {t.kind === "success" ? <CheckCircle2 className="size-4 mt-0.5 text-success shrink-0" /> : t.kind === "error" ? <XCircle className="size-4 mt-0.5 text-danger shrink-0" /> : <Info className="size-4 mt-0.5 text-accent shrink-0" />}
@@ -217,7 +218,7 @@ export function TagInput({ value, onChange, placeholder = "Add tag…" }: { valu
       {value.map((t) => (
         <span key={t} className="inline-flex items-center gap-1 rounded-md bg-accent-soft text-accent px-1.5 py-0.5 text-xs font-medium">
           #{t}
-          <button aria-label={`Remove ${t}`} onClick={() => onChange(value.filter((x) => x !== t))} className="opacity-60 hover:opacity-100">×</button>
+          <button aria-label={tr("Remove {tag}", { tag: t })} onClick={() => onChange(value.filter((x) => x !== t))} className="opacity-60 hover:opacity-100">×</button>
         </span>
       ))}
       <input
@@ -228,7 +229,7 @@ export function TagInput({ value, onChange, placeholder = "Add tag…" }: { valu
           if (e.key === "Backspace" && !draft && value.length) onChange(value.slice(0, -1));
         }}
         onBlur={add}
-        placeholder={value.length ? "" : placeholder}
+        placeholder={value.length ? "" : tr(placeholder)}
         className="flex-1 min-w-20 bg-transparent text-sm outline-none placeholder:text-muted"
       />
     </div>
@@ -241,7 +242,7 @@ export function ColorPicker({ value, onChange, allowNone }: { value: string; onC
   return (
     <div className="flex flex-wrap gap-1.5">
       {allowNone && (
-        <button aria-label="Default color" onClick={() => onChange("")} className={cn("size-6 rounded-full border-2 border-dashed border-border-strong", !value && "ring-2 ring-offset-2 ring-offset-surface ring-accent")} />
+        <button aria-label={tr("Default color")} onClick={() => onChange("")} className={cn("size-6 rounded-full border-2 border-dashed border-border-strong", !value && "ring-2 ring-offset-2 ring-offset-surface ring-accent")} />
       )}
       {COLORS.map((c) => (
         <button key={c} aria-label={c} onClick={() => onChange(c)} className={cn("size-6 rounded-full transition-transform hover:scale-110", value === c && "ring-2 ring-offset-2 ring-offset-surface ring-[var(--accent)]")} style={{ background: c }} />

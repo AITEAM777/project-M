@@ -1,10 +1,11 @@
 "use client";
+import { tp, tr } from "@/lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, addMonths, endOfMonth, format, isSameDay, isSameMonth, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, addMonths, endOfMonth, isSameDay, isSameMonth, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { AlertTriangle, ChevronLeft, ChevronRight, GripVertical, Plus, Target } from "lucide-react";
 import { invalidate, patch, useApi } from "@/lib/client/api";
 import { toast, useUI } from "@/lib/client/store";
-import { minutes, time } from "@/lib/client/format";
+import { fmt, minutes, time } from "@/lib/client/format";
 import { expandRecurring, findConflicts, minutesByGoal, suggestSlots, type RecurringBlock, type TimeBlock } from "@/lib/schedule";
 import type { CalEvent, Goal, Task } from "@/lib/client/types";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ export default function CalendarPage() {
         const dur = end.getTime() - start.getTime();
         const ns = new Date(new Date(base.start).getTime() + delta);
         await patch(`/api/events/${base.id}`, { start: ns.toISOString(), end: new Date(ns.getTime() + dur).toISOString() });
-        if (b.recurring) toast.info("The whole recurring series was moved");
+        if (b.recurring) toast.info(tr("The whole recurring series was moved"));
       }
       refresh();
     } catch (e) { toast.error(e); }
@@ -76,30 +77,30 @@ export default function CalendarPage() {
   const scheduleTask = async (taskId: string, start: Date) => {
     const t = open?.tasks.find((x) => x.id === taskId);
     const dur = (t?.estimateMinutes || 60) * 60000;
-    try { await patch(`/api/tasks/${taskId}`, { scheduledStart: start.toISOString(), scheduledEnd: new Date(start.getTime() + dur).toISOString() }); refresh(); invalidate("/api/tasks"); toast.success("Time-blocked"); } catch (e) { toast.error(e); }
+    try { await patch(`/api/tasks/${taskId}`, { scheduledStart: start.toISOString(), scheduledEnd: new Date(start.getTime() + dur).toISOString() }); refresh(); invalidate("/api/tasks"); toast.success(tr("Time-blocked")); } catch (e) { toast.error(e); }
   };
 
   const days = view === "day" ? [range.from] : Array.from({ length: 7 }, (_, i) => addDays(range.from, i));
   const step = (d: number) => setAnchor((a) => (view === "month" ? addMonths(a, d) : addDays(a, d * (view === "week" ? 7 : 1))));
-  const title = view === "month" ? format(anchor, "MMMM yyyy") : view === "day" ? format(anchor, "EEEE, d MMMM") : `${format(range.from, "d MMM")} – ${format(addDays(range.to, -1), "d MMM yyyy")}`;
+  const title = view === "month" ? fmt(anchor, "MMMM yyyy") : view === "day" ? fmt(anchor, "EEEE, d MMMM") : `${fmt(range.from, "d MMM")} – ${fmt(addDays(range.to, -1), "d MMM yyyy")}`;
 
   return (
     <div className="flex flex-col gap-4 xl:flex-row">
       <div className="min-w-0 flex-1">
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <h1 className="mr-2 text-2xl font-semibold tracking-tight">Calendar</h1>
-          <Button size="icon-sm" variant="ghost" onClick={() => step(-1)} aria-label="Previous"><ChevronLeft className="size-4" /></Button>
-          <Button size="sm" variant="secondary" onClick={() => setAnchor(new Date())}>Today</Button>
-          <Button size="icon-sm" variant="ghost" onClick={() => step(1)} aria-label="Next"><ChevronRight className="size-4" /></Button>
+          <h1 className="mr-2 text-2xl font-semibold tracking-tight">{tr("Calendar")}</h1>
+          <Button size="icon-sm" variant="ghost" onClick={() => step(-1)} aria-label={tr("Previous")}><ChevronLeft className="size-4" /></Button>
+          <Button size="sm" variant="secondary" onClick={() => setAnchor(new Date())}>{tr("Today")}</Button>
+          <Button size="icon-sm" variant="ghost" onClick={() => step(1)} aria-label={tr("Next")}><ChevronRight className="size-4" /></Button>
           <span className="text-sm font-medium">{title}</span>
           <div className="flex-1" />
-          <Tabs value={view} onChange={setView} items={[{ value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }]} />
-          <Button size="sm" variant="primary" onClick={() => setEditing({ defaults: {} })}><Plus className="size-4" /> Event</Button>
+          <Tabs data-tour="cal-views" value={view} onChange={setView} items={[{ value: "day", label: tr("Day") }, { value: "week", label: tr("Week") }, { value: "month", label: tr("Month") }]} />
+          <Button size="sm" variant="primary" onClick={() => setEditing({ defaults: {} })}><Plus className="size-4" />{" "}{tr("Event")}</Button>
         </div>
         {conflicts.length > 0 && (
           <div className="mb-3 flex items-start gap-2 rounded-xl border border-warning/40 bg-warning-soft px-3 py-2 text-sm text-warning">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            <span>{conflicts.length} scheduling conflict{conflicts.length > 1 ? "s" : ""} in this period — see suggestions on the right.</span>
+            <span>{tr("{n} in this period — see suggestions on the right.", { n: tp(conflicts.length, "# scheduling conflict", "# scheduling conflicts") })}</span>
           </div>
         )}
         {view === "month" ? (
@@ -114,9 +115,9 @@ export default function CalendarPage() {
 
       <aside className="w-full space-y-4 xl:w-72">
         <ConflictsCard conflicts={conflicts} blocks={blocks} onApply={(b, s, e) => moveBlock(b as Block, s, e)} />
-        <Card className="p-4">
-          <h2 className="mb-1 text-sm font-semibold">Unscheduled tasks</h2>
-          <p className="mb-2 text-xs text-muted">Drag onto the calendar to time-block.</p>
+        <Card data-tour="cal-unscheduled" className="p-4">
+          <h2 className="mb-1 text-sm font-semibold">{tr("Unscheduled tasks")}</h2>
+          <p className="mb-2 text-xs text-muted">{tr("Drag onto the calendar to time-block.")}</p>
           <ul className="max-h-72 space-y-1 overflow-y-auto">
             {open?.tasks.filter((t) => !t.scheduledStart).slice(0, 40).map((t) => (
               <li key={t.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/task", t.id)}
@@ -126,26 +127,26 @@ export default function CalendarPage() {
                 <span className="text-[11px] text-muted">{minutes(t.estimateMinutes || 60)}</span>
               </li>
             ))}
-            {open && !open.tasks.some((t) => !t.scheduledStart) && <li className="text-xs text-muted">Everything is scheduled.</li>}
+            {open && !open.tasks.some((t) => !t.scheduledStart) && <li className="text-xs text-muted">{tr("Everything is scheduled.")}</li>}
           </ul>
         </Card>
-        <Card className="p-4">
-          <h2 className="mb-2 text-sm font-semibold">Time per goal</h2>
-          {!goalMinutes.size ? <p className="text-xs text-muted">Link events or tasks to goals to see where your time goes. Activities can support several goals at once.</p> : (
+        <Card data-tour="cal-goals" className="p-4">
+          <h2 className="mb-2 text-sm font-semibold">{tr("Time per goal")}</h2>
+          {!goalMinutes.size ? <p className="text-xs text-muted">{tr("Link events or tasks to goals to see where your time goes. Activities can support several goals at once.")}</p> : (
             <ul className="space-y-2 text-sm">
               {[...goalMinutes.entries()].sort((a, b) => b[1] - a[1]).map(([gid, m]) => (
-                <li key={gid} className="flex items-center gap-2"><Target className="size-3.5 text-muted" /><span className="flex-1 truncate">{goals?.goals.find((g) => g.id === gid)?.title ?? "Goal"}</span><span className="text-xs tabular text-muted">{minutes(Math.round(m))}</span></li>
+                <li key={gid} className="flex items-center gap-2"><Target className="size-3.5 text-muted" /><span className="flex-1 truncate">{goals?.goals.find((g) => g.id === gid)?.title ?? tr("Goal")}</span><span className="text-xs tabular text-muted">{minutes(Math.round(m))}</span></li>
               ))}
             </ul>
           )}
         </Card>
       </aside>
 
-      <Dialog open={!!editing} onClose={() => setEditing(null)} title={editing?.event ? "Edit event" : "New event"}>
+      <Dialog open={!!editing} onClose={() => setEditing(null)} title={editing?.event ? tr("Edit event") : tr("New event")}>
         {editing && <EventForm event={editing.event} defaults={editing.defaults} onDone={() => { setEditing(null); refresh(); }} onCancel={() => setEditing(null)}
           onDelete={editing.event ? async () => {
-            if (!(await confirm({ title: "Delete this event?", body: editing.event!.recurrence !== "NONE" ? "All occurrences of this recurring event will be deleted." : undefined, confirmLabel: "Delete", danger: true }))) return;
-            try { await del(`/api/events/${editing.event!.id}`); setEditing(null); refresh(); toast.success("Event deleted"); } catch (e) { toast.error(e); }
+            if (!(await confirm({ title: tr("Delete this event?"), body: editing.event!.recurrence !== "NONE" ? "All occurrences of this recurring event will be deleted." : undefined, confirmLabel: tr("Delete"), danger: true }))) return;
+            try { await del(`/api/events/${editing.event!.id}`); setEditing(null); refresh(); toast.success(tr("Event deleted")); } catch (e) { toast.error(e); }
           } : undefined} />}
       </Dialog>
     </div>
@@ -208,16 +209,16 @@ function TimeGrid({ days, blocks, dueTasks, conflictIds, onCreate, onOpen, onMov
   }, [drag?.b.id, drag?.mode, days.length, onMove, onOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Card className="overflow-hidden">
+    <Card data-tour="cal-grid" className="overflow-hidden">
       <div className="grid border-b border-border" style={{ gridTemplateColumns: `52px repeat(${days.length}, minmax(0,1fr))` }}>
         <div />
         {days.map((d) => (
           <div key={d.toISOString()} className="border-l border-border px-2 py-2 text-center">
-            <p className="text-[11px] uppercase text-muted">{format(d, "EEE")}</p>
-            <p className={cn("mx-auto grid size-7 place-items-center rounded-full text-sm font-semibold", isSameDay(d, new Date()) && "bg-accent text-accent-fg")}>{format(d, "d")}</p>
+            <p className="text-[11px] uppercase text-muted">{fmt(d, "EEE")}</p>
+            <p className={cn("mx-auto grid size-7 place-items-center rounded-full text-sm font-semibold", isSameDay(d, new Date()) && "bg-accent text-accent-fg")}>{fmt(d, "d")}</p>
             <div className="mt-1 space-y-0.5">
               {dueTasks.filter((t) => isSameDay(new Date(t.dueDate!), d)).slice(0, 3).map((t) => (
-                <button key={t.id} onClick={() => onOpenTask(t.id)} className={cn("block w-full truncate rounded px-1 text-left text-[11px]", t.status === "DONE" ? "bg-surface-2 text-muted line-through" : "bg-accent-soft text-accent")} title={`Due: ${t.title}`}>{t.title}</button>
+                <button key={t.id} onClick={() => onOpenTask(t.id)} className={cn("block w-full truncate rounded px-1 text-left text-[11px]", t.status === "DONE" ? "bg-surface-2 text-muted line-through" : "bg-accent-soft text-accent")} title={tr("Due: {title}", { title: t.title })}>{t.title}</button>
               ))}
             </div>
           </div>
@@ -254,7 +255,7 @@ function TimeGrid({ days, blocks, dueTasks, conflictIds, onCreate, onOpen, onMov
                           transform: active && drag.mode === "move" ? `translateX(${drag.dayShift * 100}%)` : undefined,
                           background: `color-mix(in oklab, ${b.color ?? "var(--accent)"} 16%, var(--surface))`, borderColor: `color-mix(in oklab, ${b.color ?? "var(--accent)"} 45%, transparent)`,
                         }}
-                        title={`${b.title} · ${time(b.start)}–${time(b.end)}${conflict ? " · conflicts with another block" : ""}`}
+                        title={`${b.title} · ${time(b.start)}–${time(b.end)}${conflict ? ` · ${tr("conflicts with another block")}` : ""}`}
                         data-col={di}
                       >
                         <p className={cn("truncate font-medium", b.done && "line-through")}>{b.kind === "task" ? "✓ " : ""}{b.title}</p>
@@ -278,7 +279,7 @@ function MonthGrid({ anchor, from, blocks, tasks, onDay }: { anchor: Date; from:
   return (
     <Card className="overflow-hidden">
       <div className="grid grid-cols-7 border-b border-border text-center text-[11px] uppercase text-muted">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <div key={d} className="py-2">{d}</div>)}
+        {Array.from({ length: 7 }, (_, i) => fmt(addDays(from, i), "EEE")).map((d) => <div key={d} className="py-2">{d}</div>)}
       </div>
       <div className="grid grid-cols-7">
         {cells.map((d) => {
@@ -286,10 +287,10 @@ function MonthGrid({ anchor, from, blocks, tasks, onDay }: { anchor: Date; from:
           const due = tasks.filter((t) => t.dueDate && !t.scheduledStart && isSameDay(new Date(t.dueDate), d));
           return (
             <button key={d.toISOString()} onClick={() => onDay(d)} className={cn("min-h-24 border-b border-l border-border p-1.5 text-left align-top hover:bg-surface-2", !isSameMonth(d, anchor) && "bg-surface-2/40 text-muted")}>
-              <span className={cn("grid size-6 place-items-center rounded-full text-xs font-medium", isSameDay(d, new Date()) && "bg-accent text-accent-fg")}>{format(d, "d")}</span>
+              <span className={cn("grid size-6 place-items-center rounded-full text-xs font-medium", isSameDay(d, new Date()) && "bg-accent text-accent-fg")}>{fmt(d, "d")}</span>
               <div className="mt-1 space-y-0.5">
                 {items.slice(0, 3).map((b) => <p key={b.id} className="truncate rounded px-1 text-[11px]" style={{ background: `color-mix(in oklab, ${b.color ?? "var(--accent)"} 16%, transparent)` }}>{time(b.start)} {b.title}</p>)}
-                {due.slice(0, 2).map((t) => <p key={t.id} className="truncate rounded bg-accent-soft px-1 text-[11px] text-accent">Due: {t.title}</p>)}
+                {due.slice(0, 2).map((t) => <p key={t.id} className="truncate rounded bg-accent-soft px-1 text-[11px] text-accent">{tr("Due: {title}", { title: t.title })}</p>)}
                 {items.length + due.length > 5 && <p className="text-[10px] text-muted">+{items.length + due.length - 5} more</p>}
               </div>
             </button>
@@ -302,11 +303,11 @@ function MonthGrid({ anchor, from, blocks, tasks, onDay }: { anchor: Date; from:
 
 function ConflictsCard({ conflicts, blocks, onApply }: { conflicts: ReturnType<typeof findConflicts>; blocks: Block[]; onApply: (b: TimeBlock, s: Date, e: Date) => void }) {
   if (!conflicts.length) return (
-    <Card className="p-4"><h2 className="text-sm font-semibold">Conflicts</h2><p className="mt-1 text-xs text-muted">No overlapping activities in this period. ✓</p></Card>
+    <Card data-tour="cal-conflicts" className="p-4"><h2 className="text-sm font-semibold">{tr("Conflicts")}</h2><p className="mt-1 text-xs text-muted">{tr("No overlapping activities in this period. ✓")}</p></Card>
   );
   return (
-    <Card className="p-4">
-      <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-warning"><AlertTriangle className="size-4" /> Conflicts</h2>
+    <Card data-tour="cal-conflicts" className="p-4">
+      <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-warning"><AlertTriangle className="size-4" />{" "}{tr("Conflicts")}</h2>
       <ul className="space-y-3">
         {conflicts.slice(0, 6).map((c, i) => {
           const mover = c.b;
@@ -314,13 +315,13 @@ function ConflictsCard({ conflicts, blocks, onApply }: { conflicts: ReturnType<t
           const slots = suggestSlots(blocks.filter((b) => b.id !== mover.id), mover.start, dur, { limit: 2 });
           return (
             <li key={i} className="text-sm">
-              <p><span className="font-medium">{c.a.title}</span> overlaps <span className="font-medium">{c.b.title}</span> by {c.overlapMinutes}m on {format(c.a.start, "EEE d")}.</p>
+              <p>{tr("“{a}” overlaps “{b}” by {m} min on {day}.", { a: c.a.title, b: c.b.title, m: c.overlapMinutes, day: fmt(c.a.start, "EEE d") })}</p>
               {slots.length ? (
                 <div className="mt-1 flex flex-wrap gap-1">
-                  <span className="text-xs text-muted">Move “{mover.title}” to</span>
+                  <span className="text-xs text-muted">{tr("Move “{title}” to", { title: mover.title })}</span>
                   {slots.map((s) => <button key={s.start.toISOString()} onClick={() => onApply(mover, s.start, s.end)} className="rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-medium text-accent hover:brightness-95">{time(s.start)}</button>)}
                 </div>
-              ) : <p className="mt-1 text-xs text-muted">No free slot of {dur}m left that day — consider another day.</p>}
+              ) : <p className="mt-1 text-xs text-muted">{tr("No free slot of {m} min left that day — consider another day.", { m: dur })}</p>}
             </li>
           );
         })}

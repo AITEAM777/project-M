@@ -5,7 +5,9 @@ export interface TemplateNode { key: string; kind: string; title: string; x: num
 export interface TemplateEdge { from: string; to: string; relation: string; label?: string }
 export interface MapTemplate { id: string; name: string; description: string; nodes: TemplateNode[]; edges: TemplateEdge[] }
 
-export const MAP_TEMPLATES: MapTemplate[] = [
+const UK: Record<string, string> = {"Personal development": "Особистий розвиток", "Health, finance and education branches with the cause-and-effect chains between them.": "Гілки здоров'я, фінансів і навчання з причинно-наслідковими зв'язками між ними.", "My Personal Development": "Мій особистий розвиток", "Health": "Здоров'я", "Finance": "Фінанси", "Education": "Навчання", "Better Sleep": "Кращий сон", "Exercise regularly": "Регулярні тренування", "More Energy": "Більше енергії", "Improved Learning": "Краще навчання", "Learn Programming": "Вивчити програмування", "Better Career Opportunities": "Кращі кар'єрні можливості", "Higher Income": "Вищий дохід", "Greater Financial Stability": "Фінансова стабільність", "Startup launch": "Запуск стартапу", "From skill-building to a product that generates income.": "Від нових навичок до продукту, що приносить дохід.", "Learning Programming": "Вивчення програмування", "Building Applications": "Створення застосунків", "Creating a Startup": "Створення стартапу", "Generating Income": "Отримання доходу", "Which problem do I solve?": "Яку проблему я вирішую?", "Customer interviews": "Інтерв'ю з клієнтами", "Fitness plan": "Фітнес-план", "Training, nutrition and recovery feeding into energy and productivity.": "Тренування, харчування і відновлення, що дають енергію та продуктивність.", "Improve Physical Fitness": "Покращити фізичну форму", "Create a training schedule": "Скласти графік тренувань", "Exercise 3× per week": "Тренування 3× на тиждень", "Improve nutrition": "Покращити харчування", "Evaluate after 30 days": "Оцінити результат через 30 днів", "Better Energy": "Більше енергії", "Higher Productivity": "Вища продуктивність"};
+
+const BASE: MapTemplate[] = [
   {
     id: "personal-development",
     name: "Personal development",
@@ -83,3 +85,12 @@ export const MAP_TEMPLATES: MapTemplate[] = [
     ],
   },
 ];
+
+/** Templates in the requested language (titles of nodes, names and descriptions). */
+export function templatesFor(locale: string): MapTemplate[] {
+  if (locale !== "uk") return BASE;
+  const tr = (x: string) => UK[x] ?? x;
+  return BASE.map((t) => ({ ...t, name: tr(t.name), description: tr(t.description), nodes: t.nodes.map((n) => ({ ...n, title: tr(n.title) })) }));
+}
+
+export const MAP_TEMPLATES = BASE;

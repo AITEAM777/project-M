@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Monitor, Moon, Sun, Upload } from "lucide-react";
@@ -10,6 +11,7 @@ import { Field, Input } from "@/components/ui/input";
 import { Badge, Card, PageSkeleton } from "@/components/ui/misc";
 import { Dialog } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -29,21 +31,27 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Settings" />
+      <PageHeader title={tr("Settings")} />
       <div className="space-y-5">
         <Card className="p-5">
-          <h2 className="mb-4 font-semibold">Profile</h2>
+          <h2 className="mb-4 font-semibold">{tr("Profile")}</h2>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <Field label="Name" className="flex-1"><Input defaultValue={u.name} onChange={(e) => setName(e.target.value)} /></Field>
-            <Button onClick={() => name.trim() && save({ name: name.trim() }, "Name updated")} disabled={!name.trim() || name === u.name}>Save</Button>
+            <Field label={tr("Name")} className="flex-1"><Input defaultValue={u.name} onChange={(e) => setName(e.target.value)} /></Field>
+            <Button onClick={() => name.trim() && save({ name: name.trim() }, "Name updated")} disabled={!name.trim() || name === u.name}>{tr("Save")}</Button>
           </div>
-          <p className="mt-2 text-sm text-muted">Signed in as {u.email}</p>
+          <p className="mt-2 text-sm text-muted">{tr("Signed in as")}{" "}{u.email}</p>
+        </Card>
+
+        <Card data-tour="settings-language" className="p-5">
+          <h2 className="mb-1 font-semibold">{tr("Language")}</h2>
+          <p className="mb-3 text-sm text-muted">{tr("Choose the language of the interface.")}</p>
+          <LanguageSwitcher />
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-4 font-semibold">Appearance</h2>
+          <h2 className="mb-4 font-semibold">{tr("Appearance")}</h2>
           <div className="grid grid-cols-3 gap-2">
-            {[{ v: "light", l: "Light", i: Sun }, { v: "dark", l: "Dark", i: Moon }, { v: "system", l: "System", i: Monitor }].map(({ v, l, i: I }) => (
+            {[{ v: "light", l: "Light", i: Sun }, { v: "dark", l: "Dark", i: Moon }, { v: "system", l: "System", i: Monitor }].map(({ v, l: label, i: I }) => ({ v, l: tr(label), I })).map(({ v, l, I }) => (
               <button key={v} onClick={() => theme(v)} className={cn("flex flex-col items-center gap-2 rounded-xl border p-4 text-sm", u.theme === v ? "border-accent bg-accent-soft text-accent" : "border-border hover:bg-surface-2")}>
                 <I className="size-5" />{l}
               </button>
@@ -52,38 +60,38 @@ export default function SettingsPage() {
           <label className="mt-4 flex items-center gap-2 text-sm">
             <input type="checkbox" className="accent-[var(--accent)]" defaultChecked={typeof window !== "undefined" && localStorage.getItem("nodera-reduce-motion") === "1"}
               onChange={(e) => { try { localStorage.setItem("nodera-reduce-motion", e.target.checked ? "1" : "0"); } catch {} document.documentElement.classList.toggle("reduce-motion", e.target.checked); }} />
-            Reduce motion (also follows your system setting)
+            {tr("Reduce motion (also follows your system setting)")}
           </label>
         </Card>
 
         <Card className="p-5">
-          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">AI assistant</h2>{!me.aiAvailable && <Badge>Not configured on this server</Badge>}</div>
-          <p className="mb-3 text-sm text-muted">The assistant only reads the workspace data needed for the action you trigger, never changes anything without your confirmation, and clearly marks its suggestions.</p>
+          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("AI assistant")}</h2>{!me.aiAvailable && <Badge>{tr("Not configured on this server")}</Badge>}</div>
+          <p className="mb-3 text-sm text-muted">{tr("The assistant only reads the workspace data needed for the action you trigger, never changes anything without your confirmation, and clearly marks its suggestions.")}</p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" className="accent-[var(--accent)]" checked={u.aiEnabled} disabled={!me.aiAvailable} onChange={(e) => save({ aiEnabled: e.target.checked }, e.target.checked ? "AI features enabled" : "AI features disabled")} />
-            Enable AI features
+            {tr("Enable AI features")}
           </label>
         </Card>
 
         <Card className="p-5">
-          <div className="mb-3 flex items-center gap-2"><h2 className="font-semibold">Plan & limits</h2><Badge className="border-accent/30 bg-accent-soft text-accent">{u.plan}</Badge></div>
+          <div className="mb-3 flex items-center gap-2"><h2 className="font-semibold">{tr("Plan & limits")}</h2><Badge className="border-accent/30 bg-accent-soft text-accent">{u.plan}</Badge></div>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-            <div><dt className="text-muted">Active mind maps</dt><dd className="font-medium">{limit(me.limits.activeMindMaps)}</dd></div>
-            <div><dt className="text-muted">Nodes per map</dt><dd className="font-medium">{limit(me.limits.nodesPerMap)}</dd></div>
-            <div><dt className="text-muted">Workspaces</dt><dd className="font-medium">{limit(me.limits.workspaces)}</dd></div>
-            <div><dt className="text-muted">Storage</dt><dd className="font-medium">{limit(me.limits.storageBytes, "MB")}</dd></div>
-            <div><dt className="text-muted">AI requests / day</dt><dd className="font-medium">{limit(me.limits.aiRequestsPerDay)}</dd></div>
+            <div><dt className="text-muted">{tr("Active mind maps")}</dt><dd className="font-medium">{limit(me.limits.activeMindMaps)}</dd></div>
+            <div><dt className="text-muted">{tr("Nodes per map")}</dt><dd className="font-medium">{limit(me.limits.nodesPerMap)}</dd></div>
+            <div><dt className="text-muted">{tr("Workspaces")}</dt><dd className="font-medium">{limit(me.limits.workspaces)}</dd></div>
+            <div><dt className="text-muted">{tr("Storage")}</dt><dd className="font-medium">{limit(me.limits.storageBytes, "MB")}</dd></div>
+            <div><dt className="text-muted">{tr("AI requests / day")}</dt><dd className="font-medium">{limit(me.limits.aiRequestsPerDay)}</dd></div>
           </dl>
-          <p className="mt-3 text-xs text-muted">Pro and Teams plans are coming soon. Billing is not enabled yet.</p>
+          <p className="mt-3 text-xs text-muted">{tr("Pro and Teams plans are coming soon. Billing is not enabled yet.")}</p>
         </Card>
 
-        <Card className="p-5">
-          <h2 className="mb-1 font-semibold">Your data</h2>
-          <p className="mb-4 text-sm text-muted">Export the current workspace any time. JSON exports are complete and can be imported back as a new workspace (backup & restore).</p>
+        <Card data-tour="settings-data" className="p-5">
+          <h2 className="mb-1 font-semibold">{tr("Your data")}</h2>
+          <p className="mb-4 text-sm text-muted">{tr("Export the current workspace any time. JSON exports are complete and can be imported back as a new workspace (backup & restore).")}</p>
           <div className="flex flex-wrap gap-2">
-            <a href={withParams("/api/export?format=json", ws)} download><Button><Download className="size-4" /> Export JSON</Button></a>
-            <a href={withParams("/api/export?format=markdown", ws)} download><Button><Download className="size-4" /> Export Markdown</Button></a>
-            <Button loading={busy === "import"} onClick={() => file.current?.click()}><Upload className="size-4" /> Import JSON backup</Button>
+            <a href={withParams("/api/export?format=json", ws)} download><Button><Download className="size-4" />{" "}{tr("Export JSON")}</Button></a>
+            <a href={withParams("/api/export?format=markdown", ws)} download><Button><Download className="size-4" />{" "}{tr("Export Markdown")}</Button></a>
+            <Button loading={busy === "import"} onClick={() => file.current?.click()}><Upload className="size-4" />{" "}{tr("Import JSON backup")}</Button>
             <input ref={file} type="file" accept="application/json,.json" hidden onChange={async (e) => {
               const f = e.target.files?.[0];
               e.target.value = "";
@@ -94,7 +102,7 @@ export default function SettingsPage() {
                 const j = await res.json();
                 if (!res.ok) throw new Error(j.error);
                 useWorkspace.getState().set(j.workspace.id);
-                toast.success(`Imported into “${j.workspace.name}”`);
+                toast.success(tr("Imported into “{name}”", { name: j.workspace.name }));
                 window.location.href = "/dashboard";
               } catch (err) { toast.error(err); } finally { setBusy(null); }
             }} />
@@ -102,35 +110,35 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-4 font-semibold">Password</h2>
+          <h2 className="mb-4 font-semibold">{tr("Password")}</h2>
           <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <Field label="Current password"><Input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} /></Field>
-            <Field label="New password"><Input type="password" autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field>
+            <Field label={tr("Current password")}><Input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} /></Field>
+            <Field label={tr("New password")}><Input type="password" autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field>
             <Button loading={busy === "pw"} disabled={!pw.current || pw.next.length < 8} onClick={async () => {
               setBusy("pw");
-              try { await post("/api/me/password", pw); setPw({ current: "", next: "" }); toast.success("Password changed"); } catch (e) { toast.error(e); } finally { setBusy(null); }
-            }}>Change</Button>
+              try { await post("/api/me/password", pw); setPw({ current: "", next: "" }); toast.success(tr("Password changed")); } catch (e) { toast.error(e); } finally { setBusy(null); }
+            }}>{tr("Change")}</Button>
           </div>
         </Card>
 
         <Card className="border-danger/30 p-5">
-          <h2 className="mb-1 font-semibold text-danger">Delete account</h2>
-          <p className="mb-3 text-sm text-muted">Permanently deletes your account, every workspace you own and all files. Export your data first — this cannot be undone.</p>
-          <Button variant="outline" className="text-danger" onClick={() => setDel({ ...del, open: true })}>Delete my account…</Button>
+          <h2 className="mb-1 font-semibold text-danger">{tr("Delete account")}</h2>
+          <p className="mb-3 text-sm text-muted">{tr("Permanently deletes your account, every workspace you own and all files. Export your data first — this cannot be undone.")}</p>
+          <Button variant="outline" className="text-danger" onClick={() => setDel({ ...del, open: true })}>{tr("Delete my account…")}</Button>
         </Card>
       </div>
 
-      <Dialog open={del.open} onClose={() => setDel({ open: false, password: "", confirm: "" })} title="Delete your account?" description="This permanently removes all of your data."
+      <Dialog open={del.open} onClose={() => setDel({ open: false, password: "", confirm: "" })} title={tr("Delete your account?")} description={tr("This permanently removes all of your data.")}
         footer={<>
-          <Button variant="ghost" onClick={() => setDel({ open: false, password: "", confirm: "" })}>Cancel</Button>
+          <Button variant="ghost" onClick={() => setDel({ open: false, password: "", confirm: "" })}>{tr("Cancel")}</Button>
           <Button variant="danger" loading={busy === "del"} disabled={del.confirm !== "DELETE" || !del.password} onClick={async () => {
             setBusy("del");
             try { await api("/api/account", { method: "DELETE", json: { password: del.password, confirm: del.confirm } }); router.replace("/login"); } catch (e) { toast.error(e); setBusy(null); }
-          }}>Delete everything</Button>
+          }}>{tr("Delete everything")}</Button>
         </>}>
         <div className="space-y-3">
-          <Field label="Password"><Input type="password" value={del.password} onChange={(e) => setDel({ ...del, password: e.target.value })} /></Field>
-          <Field label='Type "DELETE" to confirm'><Input value={del.confirm} onChange={(e) => setDel({ ...del, confirm: e.target.value })} /></Field>
+          <Field label={tr("Password")}><Input type="password" value={del.password} onChange={(e) => setDel({ ...del, password: e.target.value })} /></Field>
+          <Field label={tr("Type \"DELETE\" to confirm")}><Input value={del.confirm} onChange={(e) => setDel({ ...del, confirm: e.target.value })} /></Field>
         </div>
       </Dialog>
     </div>

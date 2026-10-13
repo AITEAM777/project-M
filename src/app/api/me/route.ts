@@ -22,11 +22,12 @@ export const PATCH = route(async (req) => {
     data: {
       name: body.name,
       theme: body.theme,
+      locale: body.locale,
       aiEnabled: body.aiEnabled,
       dashboardLayout: body.dashboardLayout,
       onboardedAt: body.onboarded === undefined ? undefined : body.onboarded ? new Date() : null,
     },
-    select: { id: true, email: true, name: true, plan: true, theme: true, aiEnabled: true, onboardedAt: true, dashboardLayout: true },
+    select: { id: true, email: true, name: true, plan: true, theme: true, locale: true, aiEnabled: true, onboardedAt: true, dashboardLayout: true },
   });
   return { user: updated };
 });

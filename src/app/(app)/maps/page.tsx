@@ -1,4 +1,5 @@
 "use client";
+import { tp, tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useState } from "react";
 import { Archive, ArchiveRestore, Copy, MoreHorizontal, Plus, Star, Trash2, Workflow } from "lucide-react";
@@ -21,13 +22,13 @@ export default function MapsPage() {
 
   return (
     <>
-      <PageHeader title="Mind Maps" description="Infinite canvases where thoughts become connected plans."
-        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: "Active" }, { value: "archived", label: "Archived" }]} /><Button variant="primary" onClick={() => openCreate("map")}><Plus className="size-4" /> New map</Button></>} />
-      {tab === "active" && limit != null && data && <p className="-mt-3 mb-4 text-xs text-muted">{data.maps.length} of {limit} active maps on your plan.</p>}
+      <PageHeader title={tr("Mind Maps")} description={tr("Infinite canvases where thoughts become connected plans.")}
+        actions={<><Tabs data-tour="maps-tabs" value={tab} onChange={setTab} items={[{ value: "active", label: tr("Active") }, { value: "archived", label: tr("Archived") }]} /><Button data-tour="maps-new" variant="primary" onClick={() => openCreate("map")}><Plus className="size-4" />{" "}{tr("New map")}</Button></>} />
+      {tab === "active" && limit != null && data && <p className="-mt-3 mb-4 text-xs text-muted">{tr("{a} of {b} active maps on your plan.", { a: data.maps.length, b: limit })}</p>}
       {!data ? <PageSkeleton /> : !data.maps.length ? (
-        <EmptyState icon={<Workflow className="size-6" />} title={tab === "active" ? "No mind maps yet" : "No archived maps"}
-          body="Start from a blank canvas or a template like “Personal development” to see how your goals connect."
-          action={tab === "active" && <Button variant="primary" onClick={() => openCreate("map")}><Plus className="size-4" /> Create your first map</Button>} />
+        <EmptyState icon={<Workflow className="size-6" />} title={tab === "active" ? tr("No mind maps yet") : tr("No archived maps")}
+          body={tr("Start from a blank canvas or a template like “Personal development” to see how your goals connect.")}
+          action={tab === "active" && <Button variant="primary" onClick={() => openCreate("map")}><Plus className="size-4" />{" "}{tr("Create your first map")}</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {data.maps.map((m) => (
@@ -37,26 +38,26 @@ export default function MapsPage() {
                 <div className="p-4">
                   <p className="flex items-center gap-1.5 font-semibold">{m.favorite && <Star className="size-3.5 fill-amber-400 text-amber-400" />}{m.title}</p>
                   {m.description && <p className="mt-0.5 line-clamp-1 text-sm text-muted">{m.description}</p>}
-                  <p className="mt-2 text-xs text-muted">{m._count.nodes} nodes · {m._count.edges} connections · {m.folder ? `${m.folder.icon} ${m.folder.name} · ` : ""}edited {ago(m.updatedAt)}</p>
+                  <p className="mt-2 text-xs text-muted">{tp(m._count.nodes, "# node", "# nodes")} · {tp(m._count.edges, "# connection", "# connections")} · {m.folder ? `${m.folder.icon} ${m.folder.name} · ` : ""}{tr("edited {when}", { when: ago(m.updatedAt) })}</p>
                 </div>
               </Link>
               <div className="absolute right-2 top-2">
-                <Popover align="end" trigger={({ toggle }) => <Button variant="secondary" size="icon-sm" onClick={toggle} aria-label="Map actions"><MoreHorizontal className="size-4" /></Button>}>
+                <Popover align="end" trigger={({ toggle }) => <Button variant="secondary" size="icon-sm" onClick={toggle} aria-label={tr("Map actions")}><MoreHorizontal className="size-4" /></Button>}>
                   {(close) => (
                     <>
-                      <MenuItem icon={<Star />} onClick={() => { close(); act(() => patch(`/api/maps/${m.id}`, { favorite: !m.favorite }), m.favorite ? "Removed from favorites" : "Added to favorites"); }}>{m.favorite ? "Unfavorite" : "Favorite"}</MenuItem>
-                      <MenuItem icon={<Copy />} onClick={() => { close(); act(() => post(`/api/maps/${m.id}/duplicate`), "Map duplicated"); }}>Duplicate</MenuItem>
+                      <MenuItem icon={<Star />} onClick={() => { close(); act(() => patch(`/api/maps/${m.id}`, { favorite: !m.favorite }), m.favorite ? "Removed from favorites" : "Added to favorites"); }}>{m.favorite ? tr("Unfavorite") : tr("Favorite")}</MenuItem>
+                      <MenuItem icon={<Copy />} onClick={() => { close(); act(() => post(`/api/maps/${m.id}/duplicate`), "Map duplicated"); }}>{tr("Duplicate")}</MenuItem>
                       {tab === "active" ? (
-                        <MenuItem icon={<Archive />} onClick={() => { close(); act(() => patch(`/api/maps/${m.id}`, { archived: true }), "Map archived"); }}>Archive</MenuItem>
+                        <MenuItem icon={<Archive />} onClick={() => { close(); act(() => patch(`/api/maps/${m.id}`, { archived: true }), "Map archived"); }}>{tr("Archive")}</MenuItem>
                       ) : (
-                        <MenuItem icon={<ArchiveRestore />} onClick={() => { close(); act(() => patch(`/api/maps/${m.id}`, { archived: false }), "Map restored"); }}>Restore</MenuItem>
+                        <MenuItem icon={<ArchiveRestore />} onClick={() => { close(); act(() => patch(`/api/maps/${m.id}`, { archived: false }), "Map restored"); }}>{tr("Restore")}</MenuItem>
                       )}
                       <MenuSeparator />
                       <MenuItem icon={<Trash2 />} danger onClick={async () => {
                         close();
-                        if (await confirm({ title: `Delete “${m.title}”?`, body: "The map, its nodes and connections are deleted permanently. Linked tasks, goals and notes are kept.", confirmLabel: "Delete map", danger: true }))
+                        if (await confirm({ title: tr("Delete “{title}”?", { title: m.title }), body: tr("The map, its nodes and connections are deleted permanently. Linked tasks, goals and notes are kept."), confirmLabel: tr("Delete map"), danger: true }))
                           act(() => del(`/api/maps/${m.id}`), "Map deleted");
-                      }}>Delete</MenuItem>
+                      }}>{tr("Delete")}</MenuItem>
                     </>
                   )}
                 </Popover>

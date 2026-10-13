@@ -34,7 +34,7 @@ export const POST = route(async (req) => {
   const arr = (v: any) => (Array.isArray(v) ? v : []);
 
   const ws = await prisma.$transaction(async (tx) => {
-    const ws = await tx.workspace.create({ data: { name: `${String(w.name ?? "Imported").slice(0, 60)} (imported)`, icon: w.icon ?? "📦", ownerId: user.id, members: { create: { userId: user.id, role: "OWNER" } } } });
+    const ws = await tx.workspace.create({ data: { name: `${String(w.name ?? "Imported").slice(0, 60)} (${user.locale === "uk" ? "імпорт" : "imported"})`, icon: w.icon ?? "📦", ownerId: user.id, members: { create: { userId: user.id, role: "OWNER" } } } });
     const W = ws.id;
     // Folders: parents before children.
     const folders = arr(w.folders);

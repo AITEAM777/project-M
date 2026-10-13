@@ -3,10 +3,10 @@ import { assertSameWorkspace, logActivity, parseBody, route, userAndWorkspace } 
 import { uid } from "@/lib/utils";
 import { mapCreate } from "@/lib/validation";
 import { assertMapQuota } from "@/server/maps";
-import { MAP_TEMPLATES } from "@/server/templates";
+import { templatesFor } from "@/server/templates";
 
 export const GET = route(async (req) => {
-  const { workspaceId } = await userAndWorkspace(req);
+  const { user, workspaceId } = await userAndWorkspace(req);
   const sp = new URL(req.url).searchParams;
   const maps = await prisma.mindMap.findMany({
     where: {
@@ -17,7 +17,7 @@ export const GET = route(async (req) => {
     orderBy: [{ favorite: "desc" }, { updatedAt: "desc" }],
     include: { folder: { select: { id: true, name: true, icon: true } }, _count: { select: { nodes: true, edges: true } } },
   });
-  return { maps, templates: MAP_TEMPLATES.map(({ id, name, description }) => ({ id, name, description })) };
+  return { maps, templates: templatesFor(user.locale).map(({ id, name, description }) => ({ id, name, description })) };
 });
 
 export const POST = route(async (req) => {
@@ -25,10 +25,11 @@ export const POST = route(async (req) => {
   const body = await parseBody(req, mapCreate);
   await assertSameWorkspace(workspaceId, { folderId: body.folderId });
   await assertMapQuota(workspaceId, user.plan);
-  const tpl = MAP_TEMPLATES.find((t) => t.id === body.template);
+  const loc = body.locale ?? user.locale;
+  const tpl = templatesFor(loc).find((t) => t.id === body.template);
   const map = await prisma.$transaction(async (tx) => {
     const m = await tx.mindMap.create({
-      data: { workspaceId, folderId: body.folderId ?? null, title: body.title?.trim() || tpl?.name || "Untitled map", description: body.description ?? tpl?.description ?? "" },
+      data: { workspaceId, folderId: body.folderId ?? null, title: body.title?.trim() || tpl?.name || (loc === "uk" ? "Нова карта" : "Untitled map"), description: body.description ?? tpl?.description ?? "" },
     });
     if (tpl) {
       const ids = new Map(tpl.nodes.map((n) => [n.key, uid("n_")]));

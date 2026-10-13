@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Goal as GoalIcon, Plus } from "lucide-react";
@@ -19,11 +20,11 @@ export default function GoalsPage() {
   const goals = useMemo(() => (data?.goals ?? []).filter((g) => tab === "all" || (tab === "done" ? g.status === "COMPLETED" : ["ACTIVE", "NOT_STARTED", "ON_HOLD"].includes(g.status))), [data, tab]);
   return (
     <>
-      <PageHeader title="Goals" description="Long-term outcomes, measured by real milestones and completed work."
-        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: "In progress" }, { value: "done", label: "Achieved" }, { value: "all", label: "All" }]} /><Button variant="primary" onClick={() => openCreate("goal")}><Plus className="size-4" /> New goal</Button></>} />
+      <PageHeader title={tr("Goals")} description={tr("Long-term outcomes, measured by real milestones and completed work.")}
+        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: tr("In progress") }, { value: "done", label: tr("Achieved") }, { value: "all", label: tr("All") }]} /><Button data-tour="goals-new" variant="primary" onClick={() => openCreate("goal")}><Plus className="size-4" />{" "}{tr("New goal")}</Button></>} />
       {!data ? <PageSkeleton /> : !goals.length ? (
-        <EmptyState icon={<GoalIcon className="size-6" />} title={tab === "done" ? "No achieved goals yet" : "No goals yet"} body="Example: “Improve physical fitness” with milestones like “Exercise 3× per week” and “Evaluate after 30 days”."
-          action={tab !== "done" && <Button variant="primary" onClick={() => openCreate("goal")}><Plus className="size-4" /> Set your first goal</Button>} />
+        <EmptyState icon={<GoalIcon className="size-6" />} title={tab === "done" ? tr("No achieved goals yet") : tr("No goals yet")} body={tr("Example: “Improve physical fitness” with milestones like “Exercise 3× per week” and “Evaluate after 30 days”.")}
+          action={tab !== "done" && <Button variant="primary" onClick={() => openCreate("goal")}><Plus className="size-4" />{" "}{tr("Set your first goal")}</Button>} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {goals.map((g) => (

@@ -15,8 +15,8 @@ async function register(page: Page) {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
   await page.waitForURL("**/dashboard");
-  await page.getByText(/Welcome to Nodera · 1\/4/).waitFor();
-  await page.getByRole("button", { name: "Skip" }).click();
+  await page.getByText("Let's show you around").waitFor();
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
 }
 
 test("complete MVP workflow", async ({ page }) => {
@@ -146,4 +146,32 @@ test("workspace data is isolated between accounts", async ({ playwright, baseURL
   const { goal } = await (await a.ctx.post(`/api/goals?ws=${a.ws}`, { data: { title: "Alice goal" } })).json();
   expect((await b.ctx.post(`/api/tasks?ws=${b.ws}`, { data: { title: "x", goalId: goal.id } })).status()).toBe(400);
   expect((await a.ctx.get(`/api/notes/${note.id}`)).status()).toBe(200);
+});
+
+test("Ukrainian UI, guided tour after sign-up and the per-page lightbulb", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByRole("radio", { name: /UA/ }).click();
+  await page.getByLabel("Ім'я").fill("Тестер");
+  await page.getByLabel("Ел. пошта").fill(`uk+${Date.now()}@nodera.test`);
+  await page.getByLabel("Пароль").fill(password);
+  await page.getByRole("button", { name: "Створити акаунт" }).click();
+  await page.waitForURL("**/dashboard");
+
+  // Right after registration the welcome dialog offers the guided tour.
+  await page.getByRole("button", { name: /Почати тур/ }).click();
+  const tour = page.getByRole("dialog", { name: "Покроковий тур" });
+  await expect(tour.getByText("Ласкаво просимо до Nodera 👋")).toBeVisible();
+  await tour.getByRole("button", { name: "Далі" }).click();
+  await expect(tour.getByText("Навігація")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tour).toBeHidden();
+
+  // The language choice is saved to the account.
+  await page.reload();
+  await expect(page.getByRole("link", { name: "Нотатки" }).first()).toBeVisible();
+
+  // Every page has a lightbulb that starts that page's own tour.
+  await page.goto("/maps");
+  await page.getByRole("button", { name: "Як працює ця сторінка?" }).click();
+  await expect(page.getByRole("dialog", { name: "Покроковий тур" })).toBeVisible();
 });

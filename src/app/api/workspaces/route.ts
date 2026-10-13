@@ -20,7 +20,7 @@ export const POST = route(async (req) => {
   const count = await prisma.workspace.count({ where: { ownerId: user.id } });
   if (count >= limitsFor(user.plan).workspaces) throw new HttpError(402, "Workspace limit reached for your plan");
   const ws = await prisma.$transaction(async (tx) => {
-    const w = await bootstrapWorkspace(tx, user.id, body.name);
+    const w = await bootstrapWorkspace(tx, user.id, body.name, user.locale);
     return body.icon ? tx.workspace.update({ where: { id: w.id }, data: { icon: body.icon } }) : w;
   });
   return { workspace: { ...ws, role: "OWNER" } };

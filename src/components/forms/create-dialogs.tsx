@@ -1,4 +1,5 @@
 "use client";
+import { tr, translated } from "@/lib/i18n";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { invalidate, post } from "@/lib/client/api";
@@ -8,7 +9,7 @@ import { TaskForm } from "./task-form";
 import { GoalForm } from "./goal-form";
 import { EventForm, FolderForm, HabitForm, MapForm, ProjectForm } from "./other-forms";
 
-const TITLES: Record<string, string> = { task: "New task", goal: "New goal", project: "New project", habit: "New habit", event: "New event", map: "New mind map", folder: "New folder" };
+const TITLES: Record<string, string> = translated({ task: "New task", goal: "New goal", project: "New project", habit: "New habit", event: "New event", map: "New mind map", folder: "New folder" });
 
 /** Global "create" dialogs opened from anywhere via useUI().openCreate(kind, defaults). */
 export function CreateDialogs() {
@@ -21,7 +22,7 @@ export function CreateDialogs() {
   useEffect(() => {
     if (kind !== "note") return;
     closeCreate();
-    post<{ note: { id: string } }>("/api/notes", { title: "Untitled", folderId: d.folderId ?? null })
+    post<{ note: { id: string } }>("/api/notes", { title: tr("Untitled"), folderId: d.folderId ?? null })
       .then(({ note }) => { invalidate("/api/notes", "/api/folders"); router.push(`/notes/${note.id}`); })
       .catch(toast.error);
   }, [kind, closeCreate, router, d.folderId]);

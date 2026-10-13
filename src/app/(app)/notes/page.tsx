@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useState } from "react";
 import { FileText, Lightbulb, Plus, Search, Star } from "lucide-react";
@@ -31,21 +32,21 @@ export default function NotesPage() {
 
   return (
     <>
-      <PageHeader title="Notes" description="Everything you've written — searchable, linkable and connected to your maps."
-        actions={<Button variant="primary" onClick={() => openCreate("note")}><Plus className="size-4" /> New note</Button>} />
-      <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center">
+      <PageHeader title={tr("Notes")} description={tr("Everything you've written — searchable, linkable and connected to your maps.")}
+        actions={<Button data-tour="notes-new" variant="primary" onClick={() => openCreate("note")}><Plus className="size-4" />{" "}{tr("New note")}</Button>} />
+      <div data-tour="notes-search" className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search titles and content, or #tag" className="pl-9" aria-label="Search notes" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Search titles and content, or #tag")} className="pl-9" aria-label={tr("Search notes")} />
         </div>
         <div className="w-full lg:w-56"><FolderSelect value={folder} onChange={setFolder} noneLabel="All folders" /></div>
         <Tabs value={tab} onChange={setTab} className="overflow-x-auto" items={[
-          { value: "all", label: "All" }, { value: "NOTE", label: "Notes" }, { value: "THOUGHT", label: "Thoughts" }, { value: "fav", label: "★" }, { value: "archived", label: "Archived" },
+          { value: "all", label: tr("All") }, { value: "NOTE", label: tr("Notes") }, { value: "THOUGHT", label: tr("Thoughts") }, { value: "fav", label: "★" }, { value: "archived", label: tr("Archived") },
         ]} />
       </div>
       {!data ? <PageSkeleton /> : !data.notes.length ? (
-        <EmptyState icon={<FileText className="size-6" />} title={dq || folder || tab !== "all" ? "No matching notes" : "No notes yet"} body="Notes support headings, checklists, tables, code, images and links to other notes."
-          action={<Button variant="primary" onClick={() => openCreate("note")}><Plus className="size-4" /> Write a note</Button>} />
+        <EmptyState icon={<FileText className="size-6" />} title={dq || folder || tab !== "all" ? tr("No matching notes") : tr("No notes yet")} body={tr("Notes support headings, checklists, tables, code, images and links to other notes.")}
+          action={<Button variant="primary" onClick={() => openCreate("note")}><Plus className="size-4" />{" "}{tr("Write a note")}</Button>} />
       ) : (
         <Card className="divide-y divide-border overflow-hidden">
           {data.notes.map((n) => (

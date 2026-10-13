@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useState } from "react";
 import { FolderTree, Plus, Star, Target } from "lucide-react";
@@ -18,11 +19,11 @@ export default function ProjectsPage() {
   const list = data?.projects.filter((p) => tab === "archived" || (tab === "completed" ? p.status === "COMPLETED" : p.status !== "COMPLETED"));
   return (
     <>
-      <PageHeader title="Projects" description="Structured collections of tasks that move your goals forward."
-        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: "Active" }, { value: "completed", label: "Completed" }, { value: "archived", label: "Archived" }]} /><Button variant="primary" onClick={() => openCreate("project")}><Plus className="size-4" /> New project</Button></>} />
+      <PageHeader title={tr("Projects")} description={tr("Structured collections of tasks that move your goals forward.")}
+        actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: tr("Active") }, { value: "completed", label: tr("Completed") }, { value: "archived", label: tr("Archived") }]} /><Button data-tour="projects-new" variant="primary" onClick={() => openCreate("project")}><Plus className="size-4" />{" "}{tr("New project")}</Button></>} />
       {!list ? <PageSkeleton /> : !list.length ? (
-        <EmptyState icon={<FolderTree className="size-6" />} title="No projects here" body="Group related tasks into a project and link it to a goal to track progress automatically."
-          action={tab === "active" && <Button variant="primary" onClick={() => openCreate("project")}><Plus className="size-4" /> Create a project</Button>} />
+        <EmptyState icon={<FolderTree className="size-6" />} title={tr("No projects here")} body={tr("Group related tasks into a project and link it to a goal to track progress automatically.")}
+          action={tab === "active" && <Button variant="primary" onClick={() => openCreate("project")}><Plus className="size-4" />{" "}{tr("Create a project")}</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {list.map((p) => (
@@ -42,7 +43,7 @@ export default function ProjectsPage() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
                   {p.goal && <span className="inline-flex items-center gap-1"><Target className="size-3" />{p.goal.title}</span>}
-                  {p.dueDate && <span>Due {relDay(p.dueDate)}</span>}
+                  {p.dueDate && <span>{tr("Due")}{" "}{relDay(p.dueDate)}</span>}
                   {!!p.overdue && <span className="font-medium text-danger">{p.overdue} overdue</span>}
                   {p.folder && <span>{p.folder.icon} {p.folder.name}</span>}
                 </div>

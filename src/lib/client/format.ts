@@ -1,20 +1,27 @@
 import { differenceInCalendarDays, format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday } from "date-fns";
+import { enUS, uk } from "date-fns/locale";
+import { getLocale, tr } from "@/lib/i18n";
+
+/** date-fns format in the active UI language. */
+export function fmt(d: Date | string | number, pattern: string) {
+  return format(new Date(d), pattern, { locale: getLocale() === "uk" ? uk : enUS });
+}
 
 export function relDay(d: string | Date | null | undefined) {
   if (!d) return "";
   const date = new Date(d);
-  if (isToday(date)) return "Today";
-  if (isTomorrow(date)) return "Tomorrow";
-  if (isYesterday(date)) return "Yesterday";
+  if (isToday(date)) return tr("Today");
+  if (isTomorrow(date)) return tr("Tomorrow");
+  if (isYesterday(date)) return tr("Yesterday");
   const diff = differenceInCalendarDays(date, new Date());
-  if (diff > 0 && diff < 7) return format(date, "EEEE");
-  return format(date, diff > 300 || diff < -300 ? "d MMM yyyy" : "d MMM");
+  if (diff > 0 && diff < 7) return fmt(date, "EEEE");
+  return fmt(date, diff > 300 || diff < -300 ? "d MMM yyyy" : "d MMM");
 }
 
 export function ago(d: string | Date) {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
-  if (s < 45) return "just now";
-  return formatDistanceToNowStrict(new Date(d), { addSuffix: true });
+  if (s < 45) return tr("just now");
+  return formatDistanceToNowStrict(new Date(d), { addSuffix: true, locale: getLocale() === "uk" ? uk : enUS });
 }
 
 export function time(d: string | Date) {
@@ -28,9 +35,10 @@ export function isOverdue(d: string | null | undefined, status?: string) {
 
 export function minutes(m: number | null | undefined) {
   if (!m) return "";
-  if (m < 60) return `${m}m`;
+  const [H, M] = getLocale() === "uk" ? ["год", "хв"] : ["h", "m"];
+  if (m < 60) return `${m}${M}`;
   const h = Math.floor(m / 60);
-  return m % 60 ? `${h}h ${m % 60}m` : `${h}h`;
+  return m % 60 ? `${h}${H} ${m % 60}${M}` : `${h}${H}`;
 }
 
 export function bytes(n: number) {

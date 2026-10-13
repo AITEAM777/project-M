@@ -1,4 +1,5 @@
 "use client";
+import { tr, translated } from "@/lib/i18n";
 import { useState } from "react";
 import { invalidate, patch } from "@/lib/client/api";
 import { toast, useUI } from "@/lib/client/store";
@@ -7,11 +8,11 @@ import type { Task, TaskStatus } from "@/lib/client/types";
 import { PRIORITY_COLOR } from "@/components/forms/options";
 import { cn } from "@/lib/utils";
 
-const COLS: { status: TaskStatus; label: string; color: string }[] = [
+const COLS: { status: TaskStatus; label: string; color: string }[] = translated([
   { status: "TODO", label: "To do", color: "#94a3b8" },
   { status: "IN_PROGRESS", label: "In progress", color: "#6366f1" },
   { status: "DONE", label: "Done", color: "#10b981" },
-];
+]);
 
 /** Kanban board with drag-and-drop between statuses (keyboard: open a card and change status). */
 export function TaskBoard({ tasks, onChanged, showProject = true }: { tasks: Task[]; onChanged: () => void; showProject?: boolean }) {
@@ -60,7 +61,7 @@ export function TaskBoard({ tasks, onChanged, showProject = true }: { tasks: Tas
                 </div>
               ))}
               {c.status === "TODO" && (
-                <button onClick={() => openCreate("task", { status: "TODO", projectId: tasks[0]?.projectId ?? null })} className="w-full rounded-xl border border-dashed border-border py-2 text-sm text-muted hover:bg-surface hover:text-text">+ Add task</button>
+                <button onClick={() => openCreate("task", { status: "TODO", projectId: tasks[0]?.projectId ?? null })} className="w-full rounded-xl border border-dashed border-border py-2 text-sm text-muted hover:bg-surface hover:text-text">{tr("+ Add task")}</button>
               )}
             </div>
           </div>

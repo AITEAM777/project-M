@@ -1,4 +1,5 @@
 "use client";
+import { tr } from "@/lib/i18n";
 import { useState } from "react";
 import { invalidate, patch, post } from "@/lib/client/api";
 import { toast } from "@/lib/client/store";
@@ -55,36 +56,36 @@ export function TaskForm({ task, defaults, onDone, onCancel }: { task?: Task; de
 
   return (
     <form onSubmit={submit} className="space-y-3.5">
-      <Field label="Title"><Input autoFocus value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Study React for 1 hour" /></Field>
-      <Field label="Description"><Textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} placeholder="Details, links, acceptance criteria…" /></Field>
+      <Field label={tr("Title")}><Input autoFocus value={f.title} onChange={(e) => set("title", e.target.value)} placeholder={tr("e.g. Study React for 1 hour")} /></Field>
+      <Field label={tr("Description")}><Textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} placeholder={tr("Details, links, acceptance criteria…")} /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Project"><ProjectSelect value={f.projectId} onChange={(v) => set("projectId", v)} /></Field>
-        <Field label="Goal"><GoalSelect value={f.goalId} onChange={(v) => set("goalId", v)} /></Field>
-        <Field label="Priority">
+        <Field label={tr("Project")}><ProjectSelect value={f.projectId} onChange={(v) => set("projectId", v)} /></Field>
+        <Field label={tr("Goal")}><GoalSelect value={f.goalId} onChange={(v) => set("goalId", v)} /></Field>
+        <Field label={tr("Priority")}>
           <Select value={f.priority} onChange={(e) => set("priority", e.target.value as typeof f.priority)}>
             {Object.entries(PRIORITY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </Field>
-        <Field label="Status">
+        <Field label={tr("Status")}>
           <Select value={f.status} onChange={(e) => set("status", e.target.value as typeof f.status)}>
-            <option value="TODO">To do</option><option value="IN_PROGRESS">In progress</option><option value="DONE">Done</option>
+            <option value="TODO">{tr("To do")}</option><option value="IN_PROGRESS">{tr("In progress")}</option><option value="DONE">{tr("Done")}</option>
           </Select>
         </Field>
-        <Field label="Due date"><Input type="date" value={f.due} onChange={(e) => set("due", e.target.value)} /></Field>
-        <Field label="Repeat">
+        <Field label={tr("Due date")}><Input type="date" value={f.due} onChange={(e) => set("due", e.target.value)} /></Field>
+        <Field label={tr("Repeat")}>
           <Select value={f.recurrence} onChange={(e) => set("recurrence", e.target.value)}>
             {Object.entries(RECURRENCE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </Field>
-        <Field label="Time block start"><Input type="datetime-local" value={f.start} onChange={(e) => set("start", e.target.value)} /></Field>
-        <Field label="Time block end"><Input type="datetime-local" value={f.end} onChange={(e) => set("end", e.target.value)} /></Field>
-        <Field label="Estimate (minutes)"><Input type="number" min={0} value={f.estimate} onChange={(e) => set("estimate", e.target.value)} placeholder="60" /></Field>
-        <Field label="Actual time (minutes)"><Input type="number" min={0} value={f.actual} onChange={(e) => set("actual", e.target.value)} /></Field>
+        <Field label={tr("Time block start")}><Input type="datetime-local" value={f.start} onChange={(e) => set("start", e.target.value)} /></Field>
+        <Field label={tr("Time block end")}><Input type="datetime-local" value={f.end} onChange={(e) => set("end", e.target.value)} /></Field>
+        <Field label={tr("Estimate (minutes)")}><Input type="number" min={0} value={f.estimate} onChange={(e) => set("estimate", e.target.value)} placeholder="60" /></Field>
+        <Field label={tr("Actual time (minutes)")}><Input type="number" min={0} value={f.actual} onChange={(e) => set("actual", e.target.value)} /></Field>
       </div>
-      <Field label="Tags"><TagInput value={f.tags} onChange={(v) => set("tags", v)} /></Field>
+      <Field label={tr("Tags")}><TagInput value={f.tags} onChange={(v) => set("tags", v)} /></Field>
       <div className="flex justify-end gap-2 pt-1">
-        {onCancel && <Button variant="ghost" onClick={onCancel}>Cancel</Button>}
-        <Button type="submit" variant="primary" loading={busy} disabled={!f.title.trim()}>{task ? "Save" : "Create task"}</Button>
+        {onCancel && <Button variant="ghost" onClick={onCancel}>{tr("Cancel")}</Button>}
+        <Button type="submit" variant="primary" loading={busy} disabled={!f.title.trim()}>{task ? tr("Save") : tr("Create task")}</Button>
       </div>
     </form>
   );
