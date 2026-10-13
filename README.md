@@ -132,7 +132,8 @@ If Playwright's bundled browser isn't installed, point it at a local Chromium: `
 ## Deployment
 
 * **Docker:** `docker compose --profile full up --build` runs Postgres + the app (migrations applied automatically). Mount a persistent volume for `UPLOAD_DIR`.
-* **Vercel / any Node host:** set `DATABASE_URL` (Neon, Supabase, RDS…), run `npm run db:deploy` in the release step, `npm run build`, `npm start`. On serverless hosts replace the local‑disk adapter in `src/server/storage.ts` (three functions) with S3/Supabase Storage, and run `scripts/reminder-worker.ts --once` from a scheduled job.
+* **Vercel:** create a hosted PostgreSQL (Neon, Supabase, Vercel Postgres…) and set `DATABASE_URL` in *Project → Settings → Environment Variables* (never `localhost`). The `vercel-build` script runs `prisma migrate deploy` automatically before `next build`, so tables are created on every deploy. After deploying, open `/api/health` — it reports whether the database URL is set, reachable and migrated. For Supabase's pooled connection (port 6543) append `?pgbouncer=true&connection_limit=1`.
+* **Any Node host:** set `DATABASE_URL` (Neon, Supabase, RDS…), run `npm run db:deploy` in the release step, `npm run build`, `npm start`. On serverless hosts replace the local‑disk adapter in `src/server/storage.ts` (three functions) with S3/Supabase Storage, and run `scripts/reminder-worker.ts --once` from a scheduled job.
 * **Backups:** rely on your database provider's point‑in‑time recovery for the server side; users can additionally export complete JSON backups and restore them as a new workspace from Settings.
 
 ## Roadmap (architecture already prepared)

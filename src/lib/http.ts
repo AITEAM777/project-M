@@ -33,6 +33,15 @@ export function route(fn: Handler) {
       if (err instanceof ZodError) {
         return NextResponse.json({ error: "Validation failed", details: err.flatten() }, { status: 400 });
       }
+      // Infrastructure problems get an explicit, non-secret message instead of a bare 500.
+      if (err instanceof Prisma.PrismaClientInitializationError) {
+        logger.error("db.unreachable", { url: req.url, err: String(err) });
+        return NextResponse.json({ error: "Database is unreachable. Check DATABASE_URL on the server." }, { status: 503 });
+      }
+      if (err instanceof Prisma.PrismaClientKnownRequestError && (err.code === "P2021" || err.code === "P2022")) {
+        logger.error("db.not_migrated", { url: req.url, err: String(err) });
+        return NextResponse.json({ error: "Database schema is missing. Run `prisma migrate deploy`." }, { status: 503 });
+      }
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === "P2025") return NextResponse.json({ error: "Not found" }, { status: 404 });
         if (err.code === "P2002") return NextResponse.json({ error: "Already exists" }, { status: 409 });
