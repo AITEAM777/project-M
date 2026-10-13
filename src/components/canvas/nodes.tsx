@@ -1,8 +1,9 @@
 "use client";
-import { getLocale, tr } from "@/lib/i18n";
+import { tr } from "@/lib/i18n";
 import { memo, useEffect, useRef, useState } from "react";
 import { Handle, NodeResizer, Position, useStore as useFlowStore, type NodeProps } from "@xyflow/react";
-import { ChevronRight, FileText, Paperclip, Plus } from "lucide-react";
+import { ChevronRight, Crosshair, FileText, Paperclip, Plus } from "lucide-react";
+import { GoalLive, HabitLive, ProjectLive, TaskLive } from "./live";
 import { cn } from "@/lib/utils";
 import { useMap, useMapCtx } from "./context";
 import { KIND_META, type MindNode } from "./types";
@@ -60,6 +61,7 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
   const { actions, readOnly } = useMapCtx();
   const editing = useMap((s) => s.editingId === id);
   const searching = useMap((s) => s.search.length > 0);
+  const [pop, setPop] = useState(false);
   const hasChildren = !!data.hasChildren;
   // Level of detail: when zoomed far out, render a lightweight node.
   const far = useFlowStore((s) => s.transform[2] < 0.4);
@@ -105,8 +107,9 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
         <div className="flex items-start gap-2">
           {task ? (
             <button
-              className={cn("nodrag mt-0.5 grid size-[17px] shrink-0 place-items-center rounded-[5px] border transition-colors", task.status === "DONE" ? "border-[var(--success)] bg-[var(--success)] text-white" : "border-[var(--border-strong)] hover:border-[var(--accent)]")}
-              onClick={(e) => { e.stopPropagation(); if (!readOnly) actions.toggleTask(id); }}
+              className={cn("nodrag mt-0.5 grid size-[17px] shrink-0 place-items-center rounded-[5px] border transition-colors", pop && "animate-check", task.status === "DONE" ? "border-[var(--success)] bg-[var(--success)] text-white" : "border-[var(--border-strong)] hover:border-[var(--accent)]")}
+              onClick={(e) => { e.stopPropagation(); if (readOnly) return; if (task.status !== "DONE") { setPop(true); navigator.vibrate?.(12); } actions.toggleTask(id); }}
+              onAnimationEnd={() => setPop(false)}
               aria-label={task.status === "DONE" ? tr("Mark task as not done") : tr("Mark task as done")}
             >
               {task.status === "DONE" && <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3.5 8.5l3 3 6-7" /></svg>}
@@ -129,9 +132,12 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
           {l?.note && <FileText className="size-3" aria-label={tr("Has note")} />}
           {!!data.attachmentCount && <span className="inline-flex items-center gap-0.5"><Paperclip className="size-3" />{data.attachmentCount}</span>}
           {data.tags.slice(0, 2).map((t) => <span key={t}>#{t}</span>)}
-          {task?.dueDate && <span>· {tr("due {date}", { date: new Date(task.dueDate).toLocaleDateString(getLocale() === "uk" ? "uk-UA" : "en-US", { month: "short", day: "numeric" }) })}</span>}
         </div>
-        {progress !== undefined && (
+        {!isCircle && l?.goal && <div className="mt-2"><GoalLive goal={l.goal} color={data.color || "var(--accent)"} /></div>}
+        {!isCircle && !l?.goal && l?.project && <div className="mt-2"><ProjectLive project={l.project} color={color} /></div>}
+        {!isCircle && l?.habit && <div className="mt-2"><HabitLive habit={l.habit} readOnly={readOnly} onToggleToday={() => actions.toggleHabitToday(id)} /></div>}
+        {!isCircle && task && <div className="mt-1.5 empty:hidden"><TaskLive task={task} /></div>}
+        {isCircle && progress !== undefined && (
           <div className="mt-2 flex items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--surface-3)]"><div className="h-full rounded-full" style={{ width: `${progress}%`, background: progress >= 100 ? "var(--success)" : color }} /></div>
             <span className="text-[10.5px] tabular text-[var(--muted)]">{progress}%</span>
@@ -145,6 +151,11 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
           aria-label={data.collapsed ? tr("Expand branch") : tr("Collapse branch")}
         >
           {data.collapsed ? `+${data.hiddenDescendants ?? ""}` : <ChevronRight className="size-3.5 rotate-180" />}
+        </button>
+      )}
+      {selected && !editing && (
+        <button onClick={(e) => { e.stopPropagation(); actions.focus(id); }} className="nodrag absolute -top-3 right-3 z-10 flex h-6 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[10.5px] font-semibold text-[var(--text-2)] shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)]" title={tr("Focus on this branch (F)")}>
+          <Crosshair className="size-3" />{tr("Focus")}
         </button>
       )}
       {selected && !readOnly && !editing && (

@@ -5,6 +5,8 @@ import type { MapState, MapStore } from "./store";
 
 export interface MapActions {
   toggleTask: (nodeId: string) => void;
+  toggleHabitToday: (nodeId: string) => void;
+  focus: (nodeId: string) => void;
   toggleCollapse: (nodeId: string) => void;
   addChild: (nodeId: string) => void;
   finishEdit: (nodeId: string, title: string | null) => void;

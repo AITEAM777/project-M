@@ -4,7 +4,21 @@ import { prisma } from "@/lib/db";
 import { HttpError } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
 import { goalProgress, collectGoalTasks, taskProgress } from "@/lib/progress";
+import { utcDayKey } from "@/lib/habits";
 import type { EdgeInput, NodeInput } from "@/lib/validation";
+
+function goalSnapshot(goal: {
+  id: string; title: string; status: string; autoProgress: boolean; manualProgress: number; targetDate: Date | null;
+  milestones: { done: boolean }[]; tasks: { id: string; status: string }[]; projects: { tasks: { id: string; status: string }[] }[];
+}) {
+  const tasks = collectGoalTasks(goal.tasks, goal.projects);
+  return {
+    id: goal.id, title: goal.title, status: goal.status, targetDate: goal.targetDate,
+    progress: goalProgress({ ...goal, tasks }),
+    milestonesDone: goal.milestones.filter((m) => m.done).length, milestonesTotal: goal.milestones.length,
+    tasksDone: tasks.filter((t) => t.status === "DONE").length, tasksTotal: tasks.length,
+  };
+}
 
 /** Linked entity snapshots so nodes can render live status (task done, goal progress...). */
 export async function loadMapGraph(mapId: string) {
@@ -12,18 +26,24 @@ export async function loadMapGraph(mapId: string) {
     prisma.mapNode.findMany({
       where: { mapId },
       include: {
-        task: { select: { id: true, title: true, status: true, dueDate: true, priority: true } },
+        task: { select: { id: true, title: true, status: true, dueDate: true, priority: true, estimateMinutes: true, scheduledStart: true } },
         note: { select: { id: true, title: true, contentText: true } },
         goal: {
           select: {
-            id: true, title: true, status: true, autoProgress: true, manualProgress: true,
+            id: true, title: true, status: true, autoProgress: true, manualProgress: true, targetDate: true,
             milestones: { select: { done: true } },
             tasks: { select: { id: true, status: true } },
             projects: { select: { tasks: { select: { id: true, status: true } } } },
           },
         },
         project: { select: { id: true, title: true, status: true, tasks: { select: { status: true } } } },
-        habit: { select: { id: true, title: true, icon: true } },
+        habit: {
+          select: {
+            id: true, title: true, icon: true, color: true, frequency: true, targetPerPeriod: true,
+            // Enough history for streaks and the weekly strip; the client computes stats in local time.
+            logs: { where: { date: { gte: new Date(Date.now() - 400 * 86_400_000) } }, select: { date: true, count: true } },
+          },
+        },
         _count: { select: { attachments: true } },
       },
     }),
@@ -38,11 +58,11 @@ export async function loadMapGraph(mapId: string) {
       linked: {
         task: task ?? null,
         note: note ? { id: note.id, title: note.title, preview: note.contentText.slice(0, 160) } : null,
-        goal: goal
-          ? { id: goal.id, title: goal.title, status: goal.status, progress: goalProgress({ ...goal, tasks: collectGoalTasks(goal.tasks, goal.projects) }) }
+        goal: goal ? goalSnapshot(goal) : null,
+        project: project ? { id: project.id, title: project.title, status: project.status, progress: taskProgress(project.tasks).percent, tasksDone: taskProgress(project.tasks).done, tasksTotal: project.tasks.length } : null,
+        habit: habit
+          ? { id: habit.id, title: habit.title, icon: habit.icon, color: habit.color, frequency: habit.frequency, targetPerPeriod: habit.targetPerPeriod, logs: Object.fromEntries(habit.logs.map((l) => [utcDayKey(l.date), l.count])) }
           : null,
-        project: project ? { id: project.id, title: project.title, status: project.status, progress: taskProgress(project.tasks).percent } : null,
-        habit: habit ?? null,
       },
     })),
     edges,

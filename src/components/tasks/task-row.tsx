@@ -3,6 +3,7 @@ import { tr } from "@/lib/i18n";
 import { CalendarClock, Repeat, Target } from "lucide-react";
 import { invalidate, patch } from "@/lib/client/api";
 import { toast, useUI } from "@/lib/client/store";
+import { reportGoals, type GoalDelta } from "@/lib/client/celebrate";
 import { isOverdue, minutes, relDay, time } from "@/lib/client/format";
 import type { Task } from "@/lib/client/types";
 import { Checkbox } from "@/components/ui/input";
@@ -13,7 +14,8 @@ export async function toggleTask(t: Pick<Task, "id" | "status" | "title">, onCha
   const next = t.status === "DONE" ? "TODO" : "DONE";
   onChange?.(next);
   try {
-    await patch(`/api/tasks/${t.id}`, { status: next });
+    const res = await patch<{ goals?: GoalDelta[] }>(`/api/tasks/${t.id}`, { status: next });
+    reportGoals(res.goals);
     if (next === "DONE") toast.success(tr("Completed “{title}”", { title: t.title }), { label: tr("Undo"), run: () => toggleTask({ ...t, status: "DONE" }, onChange) });
     invalidate("/api/tasks", "/api/dashboard", "/api/goals", "/api/projects");
   } catch (e) {

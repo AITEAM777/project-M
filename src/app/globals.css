@@ -165,3 +165,26 @@ body {
 .react-flow__edge.dimmed { opacity: 0.12; }
 .react-flow__connection-path { stroke: var(--accent); stroke-width: 2; }
 .react-flow__node-group-container { background: transparent; }
+
+/* ---- Feedback & celebration ---- */
+@keyframes check-pop { 0% { transform: scale(1) } 35% { transform: scale(1.28) } 65% { transform: scale(.92) } 100% { transform: scale(1) } }
+@keyframes check-ring { from { box-shadow: 0 0 0 0 rgba(18,161,80,.45) } to { box-shadow: 0 0 0 9px rgba(18,161,80,0) } }
+.animate-check { animation: check-pop 380ms cubic-bezier(.2,.9,.3,1.3), check-ring 520ms ease-out; }
+@keyframes done-flash { from { background: var(--success-soft) } to { background: transparent } }
+.animate-done-flash { animation: done-flash 900ms ease-out; }
+@keyframes pulse-in { from { opacity: 0; transform: translateY(14px) scale(.96) } to { opacity: 1; transform: none } }
+.animate-pulse-in { animation: pulse-in 260ms cubic-bezier(.2,.9,.3,1.2); }
+@keyframes celebrate-in { from { opacity: 0; transform: translateY(18px) scale(.94) } to { opacity: 1; transform: none } }
+.animate-celebrate-in { animation: celebrate-in 420ms cubic-bezier(.2,.9,.3,1.15); }
+@keyframes medal { 0% { transform: scale(.4) rotate(-20deg) } 60% { transform: scale(1.12) rotate(6deg) } 100% { transform: none } }
+.animate-medal { animation: medal 700ms cubic-bezier(.2,.9,.3,1.3) 120ms both; }
+@keyframes confetti-fall { from { transform: translate3d(0,0,0) rotate(0) } to { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--rot)) } }
+.confetti-bit { animation-name: confetti-fall; animation-timing-function: cubic-bezier(.25,.6,.4,1); animation-fill-mode: both; }
+@keyframes focus-glow { 0%,100% { box-shadow: 0 0 0 4px rgba(91,91,214,.16), 0 10px 30px rgba(91,91,214,.16) } 50% { box-shadow: 0 0 0 6px rgba(91,91,214,.22), 0 12px 36px rgba(91,91,214,.22) } }
+.reduce-motion .animate-check, .reduce-motion .animate-pulse-in, .reduce-motion .animate-celebrate-in, .reduce-motion .animate-medal, .reduce-motion .animate-done-flash { animation: none; }
+.reduce-motion .confetti-bit { display: none; }
+@media (prefers-reduced-motion: reduce) { .animate-check, .animate-pulse-in, .animate-celebrate-in, .animate-medal, .animate-done-flash { animation: none; } .confetti-bit { display: none; } }
+.react-flow__node.map-dimmed, .react-flow__edge.map-dimmed { opacity: .22; filter: grayscale(1); transition: opacity .3s, filter .3s; }
+.react-flow__node.map-dimmed:hover { opacity: .6; }
+.react-flow__node.map-focus-root > div { animation: focus-glow 2.4s ease-in-out infinite; border-color: var(--accent); }
+.reduce-motion .react-flow__node.map-focus-root > div { animation: none; box-shadow: 0 0 0 4px rgba(91,91,214,.18); }

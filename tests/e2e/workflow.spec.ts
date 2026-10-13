@@ -175,3 +175,51 @@ test("Ukrainian UI, guided tour after sign-up and the per-page lightbulb", async
   await page.getByRole("button", { name: "Як працює ця сторінка?" }).click();
   await expect(page.getByRole("dialog", { name: "Покроковий тур" })).toBeVisible();
 });
+
+test("natural-language create, goal pulse, celebration and map focus", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel("Name").fill("Flow Tester");
+  await page.getByLabel("Email").fill(`flow+${Date.now()}@nodera.test`);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.waitForURL("**/dashboard");
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  const { workspaces } = await (await page.request.get("/api/workspaces")).json();
+  const ws = workspaces[0].id as string;
+  const { goal } = await (await page.request.post(`/api/goals?ws=${ws}`, { data: { title: "Run a half marathon" } })).json();
+
+  // Command bar understands a plain phrase and links the task to the goal.
+  await page.keyboard.press("Control+k");
+  await page.getByRole("dialog", { name: "Search and commands" }).getByRole("textbox").fill("tomorrow at 9 easy run 5 km, for goal marathon, weekly");
+  await expect(page.getByText("Nodera understood it like this")).toBeVisible();
+  await expect(page.getByText("Run a half marathon").first()).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Task created: Easy run 5 km")).toBeVisible();
+  const { tasks } = await (await page.request.get(`/api/tasks?ws=${ws}&limit=20`)).json();
+  const task = tasks.find((t: { title: string }) => t.title === "Easy run 5 km");
+  expect(task.goalId).toBe(goal.id);
+  expect(task.recurrence).toBe("WEEKLY");
+
+  // Completing a goal's only (one-off) task celebrates it.
+  const { goal: g2 } = await (await page.request.post(`/api/goals?ws=${ws}`, { data: { title: "Read 3 books" } })).json();
+  await page.request.post(`/api/tasks?ws=${ws}`, { data: { title: "Finish the last book", goalId: g2.id } });
+  await page.goto(`/goals/${g2.id}`);
+  await page.getByRole("checkbox", { name: /Mark as done/ }).first().click();
+  await expect(page.getByRole("dialog", { name: "Goal achieved" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // Focus mode on a map card.
+  const { map } = await (await page.request.post(`/api/maps?ws=${ws}`, { data: { title: "Focus test" } })).json();
+  const r = Date.now().toString(36);
+  await page.request.put(`/api/maps/${map.id}/graph?ws=${ws}`, { data: {
+    nodes: [{ id: `a${r}`, kind: "IDEA", title: "Root idea", x: 0, y: 0 }, { id: `b${r}`, kind: "GOAL", title: "", x: 300, y: 0, goalId: goal.id }, { id: `c${r}`, kind: "IDEA", title: "Unrelated", x: 0, y: 300 }],
+    edges: [{ id: `e${r}`, sourceId: `a${r}`, targetId: `b${r}`, relation: "LEADS_TO" }],
+  } });
+  await page.goto(`/maps/${map.id}`);
+  await page.locator(".react-flow__node").filter({ hasText: "Run a half marathon" }).click();
+  await page.getByRole("button", { name: "Focus" }).first().click();
+  await expect(page.getByText("Focus: Run a half marathon")).toBeVisible();
+  await expect(page.locator(".react-flow__node.map-dimmed").filter({ hasText: "Unrelated" })).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Focus: Run a half marathon")).toBeHidden();
+});

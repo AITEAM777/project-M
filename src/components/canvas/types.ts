@@ -5,11 +5,18 @@ export type NodeKind = "THOUGHT" | "IDEA" | "GOAL" | "TASK" | "PROJECT" | "HABIT
 export type Relation = "RELATED_TO" | "DEPENDS_ON" | "SUPPORTS" | "BLOCKS" | "PART_OF" | "REQUIRES" | "CONFLICTS_WITH" | "COMBINES_WITH" | "LEADS_TO";
 
 export interface Linked {
-  task: { id: string; title: string; status: string; dueDate: string | null; priority: string } | null;
+  task: { id: string; title: string; status: string; dueDate: string | null; priority: string; estimateMinutes?: number | null; scheduledStart?: string | null } | null;
   note: { id: string; title: string; preview: string } | null;
-  goal: { id: string; title: string; status: string; progress: number } | null;
-  project: { id: string; title: string; status: string; progress: number } | null;
-  habit: { id: string; title: string; icon: string } | null;
+  goal: {
+    id: string; title: string; status: string; progress: number; targetDate?: string | null;
+    milestonesDone?: number; milestonesTotal?: number; tasksDone?: number; tasksTotal?: number;
+  } | null;
+  project: { id: string; title: string; status: string; progress: number; tasksDone?: number; tasksTotal?: number } | null;
+  habit: {
+    id: string; title: string; icon: string; color?: string; frequency?: "DAILY" | "WEEKLY"; targetPerPeriod?: number;
+    /** dayKey → completions */
+    logs?: Record<string, number>;
+  } | null;
 }
 
 export interface MindNodeData extends Record<string, unknown> {

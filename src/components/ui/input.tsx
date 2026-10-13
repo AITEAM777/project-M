@@ -1,5 +1,5 @@
 "use client";
-import { createContext, forwardRef, useContext, useId } from "react";
+import { createContext, forwardRef, useContext, useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /** Field provides an id so the first control inside is associated with its label. */
@@ -47,15 +47,18 @@ export function Field({ label, children, hint, className }: { label: string; chi
 }
 
 export function Checkbox({ checked, onChange, className, label, ...p }: { checked: boolean; onChange: (v: boolean) => void; className?: string; label?: string } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange">) {
+  const [pop, setPop] = useState(false);
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={checked}
       aria-label={label}
-      onClick={(e) => { e.stopPropagation(); onChange(!checked); }}
+      onClick={(e) => { e.stopPropagation(); if (!checked) { setPop(true); navigator.vibrate?.(12); } onChange(!checked); }}
+      onAnimationEnd={() => setPop(false)}
       className={cn(
         "shrink-0 grid place-items-center size-[18px] rounded-[6px] border transition-all",
+        pop && "animate-check",
         checked ? "bg-success border-success text-white scale-100" : "border-border-strong bg-surface hover:border-accent",
         className,
       )}

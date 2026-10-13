@@ -101,6 +101,10 @@ export const TOURS: Tour[] = [
         "Here are all arrows of this card. Click one to jump to the connected card. Clicking an arrow on the canvas lets you change its type, add a label, make it two-way, reverse or delete it.",
         "Тут усі стрілки цієї картки. Клацніть, щоб перейти до пов'язаної картки. Клік по стрілці на полотні дозволяє змінити її тип, додати підпис, зробити двосторонньою, розвернути або видалити.",
       ), { action: "select-first-node", placement: "left" }),
+      S("map-canvas", T("Live cards & focus mode", "«Живі» картки та фокус-режим"), T(
+        "Cards linked to real items show their state: a goal shows a progress ring and days left, a habit shows the last 7 days and its 🔥 streak (click today's square to check in), a task can be ticked right on the map. Select a card and press “Focus” (or F) to dim everything except that branch — Esc returns the whole map.",
+        "Картки, пов'язані зі справжніми елементами, показують їхній стан: ціль — кільце прогресу й дні до дедлайну, звичка — останні 7 днів і серію 🔥 (клік по сьогоднішньому квадратику — відмітити), задачу можна відмітити прямо на карті. Виділіть картку й натисніть «Фокус» (або F) — решта карти приглушиться, лишиться тільки ця гілка. Esc повертає всю карту.",
+      ), { action: "deselect" }),
       S("map-tools", T("7. Tidy up", "7. Наведіть лад"), T(
         "Undo/redo (Ctrl+Z), auto-arrange the whole map, group selected cards (Shift+drag to select several) and search inside the map.",
         "Скасувати/повторити (Ctrl+Z), автоматично впорядкувати всю карту, згрупувати виділені картки (Shift+перетягування — виділити кілька) і пошук по карті.",

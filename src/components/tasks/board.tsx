@@ -1,5 +1,6 @@
 "use client";
 import { tr, translated } from "@/lib/i18n";
+import { reportGoals, type GoalDelta } from "@/lib/client/celebrate";
 import { useState } from "react";
 import { invalidate, patch } from "@/lib/client/api";
 import { toast, useUI } from "@/lib/client/store";
@@ -28,7 +29,8 @@ export function TaskBoard({ tasks, onChanged, showProject = true }: { tasks: Tas
     if (!t || status(t) === s) return;
     setLocal((l) => ({ ...l, [t.id]: s }));
     try {
-      await patch(`/api/tasks/${t.id}`, { status: s });
+      const res = await patch<{ goals?: GoalDelta[] }>(`/api/tasks/${t.id}`, { status: s });
+      reportGoals(res.goals);
       invalidate("/api/tasks", "/api/dashboard", "/api/goals", "/api/projects");
       onChanged();
     } catch (e) { toast.error(e); } finally { setLocal((l) => { const n = { ...l }; delete n[t.id]; return n; }); }

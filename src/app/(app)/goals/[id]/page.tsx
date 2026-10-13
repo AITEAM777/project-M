@@ -1,5 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { reportGoals, useCelebrate, type GoalDelta } from "@/lib/client/celebrate";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
@@ -80,7 +81,7 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
           <Popover align="end" trigger={({ toggle }) => <Button size="icon-sm" variant="ghost" onClick={toggle} aria-label={tr("More")}><MoreHorizontal className="size-4" /></Button>}>
             {(close) => (
               <>
-                {g.status !== "COMPLETED" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "COMPLETED" }), "Goal achieved! 🎉"); }}>{tr("Mark as achieved")}</MenuItem>}
+                {g.status !== "COMPLETED" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "COMPLETED" }).then(() => useCelebrate.getState().celebrate(g.id))); }}>{tr("Mark as achieved")}</MenuItem>}
                 {g.status !== "ON_HOLD" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "ON_HOLD" }), "Put on hold"); }}>{tr("Put on hold")}</MenuItem>}
                 {g.status !== "ACTIVE" && <MenuItem onClick={() => { close(); run(() => patch(`/api/goals/${g.id}`, { status: "ACTIVE" }), "Reactivated"); }}>{tr("Mark as active")}</MenuItem>}
                 <MenuSeparator />
@@ -107,7 +108,7 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
               {g.milestones.map((m, i) => (
                 <li key={m.id} className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
                   <GripVertical className="size-3.5 text-muted opacity-0 group-hover:opacity-60" />
-                  <Checkbox checked={m.done} label={m.title} onChange={(done) => run(() => patch(`/api/milestones/${m.id}`, { done }), done ? tr("Milestone reached: {title}", { title: m.title }) : undefined)} />
+                  <Checkbox checked={m.done} label={m.title} onChange={(done) => run(() => patch<{ goals?: GoalDelta[] }>(`/api/milestones/${m.id}`, { done }).then((r) => reportGoals(r.goals)), done ? tr("Milestone reached: {title}", { title: m.title }) : undefined)} />
                   <span className={`flex-1 text-sm ${m.done ? "text-muted line-through" : ""}`}><span className="mr-1.5 text-xs text-muted tabular">{i + 1}.</span>{m.title}</span>
                   {m.dueDate && <span className="text-xs text-muted">{relDay(m.dueDate)}</span>}
                   <button aria-label={tr("Delete milestone")} className="text-muted opacity-0 hover:text-danger group-hover:opacity-100" onClick={async () => {

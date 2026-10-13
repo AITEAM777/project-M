@@ -16,6 +16,8 @@ import { CreateDialogs } from "@/components/forms/create-dialogs";
 import { Onboarding } from "./onboarding";
 import { TaskDrawer } from "@/components/tasks/task-drawer";
 import { TourButton, TourOverlay } from "@/components/tour/tour";
+import { GoalPulse } from "@/components/celebrate/goal-pulse";
+import { Celebration } from "@/components/celebrate/celebration";
 import { cn } from "@/lib/utils";
 import { initLocale, useLocale } from "@/lib/i18n";
 
@@ -78,6 +80,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       <TourButton />
       <TourOverlay />
       <Toaster />
+      <GoalPulse />
+      <Celebration />
     </div>
   );
 }

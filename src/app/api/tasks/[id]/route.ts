@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { HttpError, assertSameWorkspace, loadOwned, logActivity, parseBody, requireUser, route } from "@/lib/http";
 import { taskUpdate } from "@/lib/validation";
 import { nextOccurrence, taskInclude } from "@/server/tasks";
+import { goalDeltas, goalProgressMap } from "@/server/goals";
 
 export const GET = route(async (_req, { params }) => {
   const user = await requireUser();
@@ -24,6 +25,10 @@ export const PATCH = route(async (req, { params }) => {
   }
   const completing = body.status === "DONE" && task.status !== "DONE";
   const reopening = body.status && body.status !== "DONE" && task.status === "DONE";
+  // Snapshot affected goals so the response can report how their progress moved.
+  const before = completing || reopening
+    ? await goalProgressMap([task.goalId, body.goalId, task.projectId ? (await prisma.project.findUnique({ where: { id: task.projectId }, select: { goalId: true } }))?.goalId : null])
+    : new Map<string, { title: string; progress: number }>();
   const updated = await prisma.$transaction(async (tx) => {
     if (dependsOn) {
       await tx.taskDependency.deleteMany({ where: { taskId: task.id } });
@@ -54,7 +59,7 @@ export const PATCH = route(async (req, { params }) => {
     return t;
   });
   if (completing) await logActivity(task.workspaceId, user.id, "completed", "task", task.id, `Completed “${task.title}”`);
-  return { task: updated };
+  return { task: updated, goals: await goalDeltas(before) };
 });
 
 export const DELETE = route(async (_req, { params }) => {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api, invalidate, patch, post, put, useApi } from "@/lib/client/api";
 import { confirm, toast } from "@/lib/client/store";
+import { reportGoals, type GoalDelta } from "@/lib/client/celebrate";
 import { useMe, useMediaQuery } from "@/lib/client/hooks";
 import { cn, uid } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ import { createMapStore, type MapStore } from "./store";
 import { decorateEdge, decorateNode, sortParentsFirst, toEdgeInputs, toFlowEdges, toFlowNodes, toNodeInputs, type ApiEdge, type ApiNode } from "./serialize";
 import { KIND_META, RELATION_META, type MindNode, type NodeKind, type Relation, type RelationEdge } from "./types";
 import { AiSummaryButton } from "./ai-summary";
+import { FocusOverlay } from "./focus";
+import { dayKey } from "@/lib/habits";
 
 interface MapResponse {
   map: { id: string; title: string; description: string; viewport: Viewport | null; workspaceId: string; folder: { id: string; name: string; icon: string } | null };
@@ -82,6 +85,7 @@ function Editor({ initial }: { initial: MapResponse }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [matchIdx, setMatchIdx] = useState(0);
+  const [focusId, setFocusId] = useState<string | null>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
 
@@ -300,14 +304,42 @@ function Editor({ initial }: { initial: MapResponse }) {
     const apply = (st: string) => store.getState().set((s) => ({ nodes: s.nodes.map((x) => (x.id === nodeId && x.data.linked?.task ? { ...x, data: { ...x.data, linked: { ...x.data.linked, task: { ...x.data.linked.task, status: st } } } } : x)) }));
     apply(status);
     try {
-      await patch(`/api/tasks/${task.id}`, { status });
+      const res = await patch<{ goals?: GoalDelta[] }>(`/api/tasks/${task.id}`, { status });
+      reportGoals(res.goals);
       invalidate("/api/tasks", "/api/dashboard", "/api/goals");
       if (status === "DONE") toast.success(tr("Completed “{title}”", { title: task.title }));
       refreshLinked().catch(() => {});
     } catch (e) { apply(task.status); toast.error(e); }
   }, [store, refreshLinked]);
 
+  const toggleHabitToday = useCallback(async (nodeId: string) => {
+    const habit = store.getState().nodes.find((x) => x.id === nodeId)?.data.linked?.habit;
+    if (!habit) return;
+    const key = dayKey(new Date());
+    const target = Math.max(1, habit.targetPerPeriod ?? 1);
+    const cur = habit.logs?.[key] ?? 0;
+    const next = cur >= target ? 0 : target;
+    const apply = (count: number) => store.getState().set((s) => ({
+      nodes: s.nodes.map((x) => (x.data.linked?.habit?.id === habit.id
+        ? { ...x, data: { ...x.data, linked: { ...x.data.linked, habit: { ...x.data.linked.habit, logs: { ...x.data.linked.habit.logs, [key]: count } } } } }
+        : x)),
+    }));
+    apply(next);
+    try {
+      await put(`/api/habits/${habit.id}/log`, { date: key, count: next });
+      if (next) navigator.vibrate?.(12);
+      invalidate("/api/habits", "/api/dashboard");
+    } catch (e) { apply(cur); toast.error(e); }
+  }, [store]);
+
+  const startFocus = useCallback((id: string) => {
+    setFocusId(id);
+    setPanelOpen(false);
+  }, []);
+
   const actions: MapActions = useMemo(() => ({
+    toggleHabitToday: (id) => void toggleHabitToday(id),
+    focus: startFocus,
     toggleTask: (id) => {
       const st = store.getState().nodes.find((x) => x.id === id)?.data.linked?.task?.status;
       void setTaskStatus(id, st === "DONE" ? "TODO" : "DONE");
@@ -324,7 +356,7 @@ function Editor({ initial }: { initial: MapResponse }) {
       s.set(() => ({ editingId: null }));
       wrapper.current?.focus();
     },
-  }), [store, addChild, setTaskStatus]);
+  }), [store, addChild, setTaskStatus, toggleHabitToday, startFocus]);
 
   const panelActions: PanelActions = useMemo(() => ({
     convert: async (nodeId, to, extra) => {
@@ -402,6 +434,33 @@ function Editor({ initial }: { initial: MapResponse }) {
     return () => window.removeEventListener("nodera:tour", onTour);
   }, [store, selectNode]);
 
+  /* ---------------- focus mode ---------------- */
+  const focusRef = useRef<string | null>(null);
+  const branchRef = useRef<Set<string>>(new Set());
+  focusRef.current = focusId;
+  const focusSet = useMemo(() => {
+    if (!focusId) return null;
+    const set = new Set([focusId]);
+    // Everything downstream of the focused card…
+    const queue = [focusId];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      for (const e of edges) if (e.source === cur && !set.has(e.target)) { set.add(e.target); queue.push(e.target); }
+    }
+    branchRef.current = new Set(set);
+    // …plus the chain of parents above it, for context.
+    let up = edges.find((e) => e.target === focusId)?.source;
+    while (up && !set.has(up)) { set.add(up); up = edges.find((e) => e.target === up)?.source; }
+    return set;
+  }, [focusId, edges]);
+  useEffect(() => {
+    if (!focusSet) return;
+    if (!nodes.some((n) => n.id === focusId)) { setFocusId(null); return; }
+    const t = setTimeout(() => rf.fitView({ nodes: [...focusSet].map((id) => ({ id })), duration: 500, padding: 0.3, maxZoom: 1.2 }), 30);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
+
   /* ---------------- keyboard ---------------- */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -421,8 +480,10 @@ function Editor({ initial }: { initial: MapResponse }) {
       if (mod && k === "g") { e.preventDefault(); if (e.shiftKey) selNodes.filter((n) => n.type === "group").forEach((g) => ungroup(g.id)); else groupSelection(); return; }
       if (mod && k === "s") { e.preventDefault(); void flush(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { if (selNodes.length || selEdges.length) { e.preventDefault(); remove(selNodes.map((n) => n.id), selEdges.map((x) => x.id)); } return; }
+      if (e.key === "Escape" && focusRef.current) { setFocusId(null); return; }
       if (selNodes.length === 1) {
         const n = selNodes[0];
+        if (!mod && k === "f") { e.preventDefault(); startFocus(n.id); return; }
         if (e.key === "Tab") { e.preventDefault(); addChild(n.id); return; }
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addSibling(n.id); return; }
         if (e.key === "F2" || (e.key === "Enter" && e.shiftKey)) { e.preventDefault(); s.set(() => ({ editingId: n.id })); return; }
@@ -433,7 +494,7 @@ function Editor({ initial }: { initial: MapResponse }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [store, duplicate, ungroup, groupSelection, flush, remove, addChild, addSibling, actions, rf, createNodeAt]);
+  }, [store, duplicate, ungroup, groupSelection, flush, remove, addChild, addSibling, actions, rf, createNodeAt, startFocus]);
 
   /* ---------------- derived render state ---------------- */
   const collapsedKey = nodes.filter((n) => n.data.collapsed).map((n) => n.id).join(",");
@@ -442,8 +503,15 @@ function Editor({ initial }: { initial: MapResponse }) {
     [collapsedKey, edges]);
   const matchSet = useMemo(() => new Set(matches), [matches]);
   const parents = useMemo(() => new Set(edges.map((e) => e.source)), [edges]);
-  const viewNodes = useMemo(() => nodes.map((n) => decorateNode(n, hidden.has(n.id), matchSet.has(n.id), counts.get(n.id) ?? 0, parents.has(n.id))), [nodes, hidden, matchSet, counts, parents]);
-  const viewEdges = useMemo(() => edges.map((e) => decorateEdge(e, hidden.has(e.source) || hidden.has(e.target), animate && nodes.length < 400)), [edges, hidden, animate, nodes.length]);
+  const viewNodes = useMemo(() => nodes.map((n) => {
+    const d = decorateNode(n, hidden.has(n.id), matchSet.has(n.id), counts.get(n.id) ?? 0, parents.has(n.id));
+    if (!focusSet) return d;
+    return { ...d, className: cn(d.className, n.id === focusId ? "map-focus-root" : focusSet.has(n.id) ? "" : "map-dimmed") };
+  }), [nodes, hidden, matchSet, counts, parents, focusSet, focusId]);
+  const viewEdges = useMemo(() => edges.map((e) => {
+    const d = decorateEdge(e, hidden.has(e.source) || hidden.has(e.target), animate && nodes.length < 400);
+    return focusSet && !(focusSet.has(e.source) && focusSet.has(e.target)) ? { ...d, className: cn(d.className, "map-dimmed"), animated: false } : d;
+  }), [edges, hidden, animate, nodes.length, focusSet]);
 
   const selectedNodes = nodes.filter((n) => n.selected);
   const selectedEdges = edges.filter((e) => e.selected);
@@ -578,6 +646,18 @@ function Editor({ initial }: { initial: MapResponse }) {
             </div>
           )}
         </div>
+
+        {focusId && focusSet && (
+          <FocusOverlay
+            root={nodes.find((n) => n.id === focusId)}
+            members={nodes.filter((n) => focusSet.has(n.id))}
+            branch={branchRef.current}
+            onExit={() => setFocusId(null)}
+            onSelect={(id) => selectNode(id)}
+            onToggleTask={(id) => actions.toggleTask(id)}
+            onToggleHabit={(id) => actions.toggleHabitToday(id)}
+          />
+        )}
 
         {selectedNodes.length > 1 && (
           <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-border bg-surface p-1 shadow-pop animate-pop-in">
