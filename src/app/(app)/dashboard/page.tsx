@@ -100,7 +100,7 @@ export default function DashboardPage() {
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm text-muted">{fmt(new Date(), "EEEE, d MMMM")}</p>
-          <h1 className="text-2xl font-semibold tracking-tight">{greeting()}, {me.user.name.split(" ")[0]}</h1>
+          <h1 className="text-[1.85rem] font-semibold tracking-tight">{greeting()}, {me.user.name.split(" ")[0]}</h1>
         </div>
         <div className="flex gap-2">
           <Button data-tour="dash-customize" variant={customizing ? "primary" : "ghost"} size="sm" onClick={() => setCustomizing(!customizing)}><Settings2 className="size-4" /> {customizing ? tr("Done") : tr("Customize")}</Button>
