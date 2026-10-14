@@ -9,6 +9,7 @@ import { COPY } from "@/components/landing/i18n";
 import { LandingCtx, Logo } from "@/components/landing/ui";
 import { H, ThoughtMap, W } from "@/components/landing/thought-map";
 import { AuthForm } from "./auth-form";
+import { ForgotForm } from "./forgot-form";
 
 function LangPills() {
   const locale = useLocale();
@@ -101,16 +102,26 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function AuthPage({ mode }: { mode: "login" | "register" }) {
+const HEAD = {
+  login: ["Welcome back", "Sign in to continue to your second brain."],
+  register: ["Create your Nodera", "A private space for your thoughts, goals and plans."],
+  forgot: ["Reset your password", "Enter your email and we'll send you a 6-digit code."],
+} as const;
+
+export function AuthPage({ mode, resetEnabled }: { mode: "login" | "register" | "forgot"; resetEnabled?: boolean }) {
+  const [codeStep, setCodeStep] = useState(false);
+  const [title, lead] = codeStep ? ["Check your email", ""] : HEAD[mode];
   return (
     <>
-      <nav aria-label={tr("Sign in or sign up")} className="mb-8 grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 text-[14px] font-semibold">
-        <Link href="/login" aria-current={mode === "login" ? "page" : undefined} className={`grid h-10 place-items-center rounded-full transition-colors ${mode === "login" ? "bg-[var(--text)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}>{tr("Log in")}</Link>
-        <Link href="/register" aria-current={mode === "register" ? "page" : undefined} className={`grid h-10 place-items-center rounded-full transition-colors ${mode === "register" ? "bg-[var(--text)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}>{tr("Sign up")}</Link>
-      </nav>
-      <h1 className="text-[clamp(26px,3vw,32px)] leading-[1.15] tracking-[-0.8px]">{tr(mode === "login" ? "Welcome back" : "Create your Nodera")}</h1>
-      <p className="mb-8 mt-2.5 text-[15.5px] leading-relaxed text-[var(--text-muted)]">{tr(mode === "login" ? "Sign in to continue to your second brain." : "A private space for your thoughts, goals and plans.")}</p>
-      <AuthForm mode={mode} />
+      {mode !== "forgot" && !codeStep && (
+        <nav aria-label={tr("Sign in or sign up")} className="mb-8 grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 text-[14px] font-semibold">
+          <Link href="/login" aria-current={mode === "login" ? "page" : undefined} className={`grid h-10 place-items-center rounded-full transition-colors ${mode === "login" ? "bg-[var(--text)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}>{tr("Log in")}</Link>
+          <Link href="/register" aria-current={mode === "register" ? "page" : undefined} className={`grid h-10 place-items-center rounded-full transition-colors ${mode === "register" ? "bg-[var(--text)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}>{tr("Sign up")}</Link>
+        </nav>
+      )}
+      <h1 className="text-[clamp(26px,3vw,32px)] leading-[1.15] tracking-[-0.8px]">{tr(title)}</h1>
+      {lead ? <p className="mb-8 mt-2.5 text-[15.5px] leading-relaxed text-[var(--text-muted)]">{tr(lead)}</p> : <div className="mb-4" />}
+      {mode === "forgot" ? <ForgotForm onCodeStep={setCodeStep} /> : <AuthForm mode={mode} resetEnabled={resetEnabled} onCodeStep={setCodeStep} />}
     </>
   );
 }

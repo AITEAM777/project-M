@@ -8,13 +8,25 @@ import { expect, test, type Page } from "@playwright/test";
 const email = `e2e+${Date.now()}@nodera.test`;
 const password = "correct-horse-battery";
 
-async function register(page: Page) {
+/** The server runs with AUTH_DEV_CODES=1, so the emailed code is also shown on screen. */
+async function enterEmailCode(page: Page, label: string | RegExp = /Code from the email|Код з листа/) {
+  const code = (await page.getByTestId("dev-code").textContent())!.trim();
+  await page.getByLabel(label).fill(code);
+}
+
+async function signUp(page: Page, name: string, mail: string, uk = false) {
   await page.goto("/register");
-  await page.getByLabel("Name").fill("E2E Tester");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
+  if (uk) await page.getByRole("radio", { name: /UA/ }).click();
+  await page.getByLabel(uk ? "Ім'я" : "Name").fill(name);
+  await page.getByLabel(uk ? "Ел. пошта" : "Email").fill(mail);
+  await page.getByLabel(uk ? "Пароль" : "Password").fill(password);
+  await page.getByRole("button", { name: uk ? "Створити акаунт" : "Create account" }).click();
+  await enterEmailCode(page);
   await page.waitForURL("**/dashboard");
+}
+
+async function register(page: Page) {
+  await signUp(page, "E2E Tester", email);
   await page.getByText("Let's show you around").waitFor();
   await page.getByRole("button", { name: "Skip", exact: true }).click();
 }
@@ -131,8 +143,11 @@ test("other users cannot read my data", async ({ page, request }) => {
 test("workspace data is isolated between accounts", async ({ playwright, baseURL }) => {
   const mk = async (tag: string) => {
     const ctx = await playwright.request.newContext({ baseURL });
-    const r = await ctx.post("/api/auth/register", { data: { name: tag, email: `${tag}+${Date.now()}@nodera.test`, password: "password-123" } });
+    const mail = `${tag}+${Date.now()}@nodera.test`;
+    const r = await ctx.post("/api/auth/register", { data: { name: tag, email: mail, password: "password-123" } });
     expect(r.ok()).toBeTruthy();
+    const { devCode } = await r.json();
+    expect((await ctx.post("/api/auth/verify", { data: { email: mail, code: devCode } })).ok()).toBeTruthy();
     const { workspaces } = await (await ctx.get("/api/workspaces")).json();
     return { ctx, ws: workspaces[0].id as string };
   };
@@ -149,13 +164,7 @@ test("workspace data is isolated between accounts", async ({ playwright, baseURL
 });
 
 test("Ukrainian UI, guided tour after sign-up and the per-page lightbulb", async ({ page }) => {
-  await page.goto("/register");
-  await page.getByRole("radio", { name: /UA/ }).click();
-  await page.getByLabel("Ім'я").fill("Тестер");
-  await page.getByLabel("Ел. пошта").fill(`uk+${Date.now()}@nodera.test`);
-  await page.getByLabel("Пароль").fill(password);
-  await page.getByRole("button", { name: "Створити акаунт" }).click();
-  await page.waitForURL("**/dashboard");
+  await signUp(page, "Тестер", `uk+${Date.now()}@nodera.test`, true);
 
   // Right after registration the welcome dialog offers the guided tour.
   await page.getByRole("button", { name: /Почати тур/ }).click();
@@ -177,12 +186,7 @@ test("Ukrainian UI, guided tour after sign-up and the per-page lightbulb", async
 });
 
 test("natural-language create, goal pulse, celebration and map focus", async ({ page }) => {
-  await page.goto("/register");
-  await page.getByLabel("Name").fill("Flow Tester");
-  await page.getByLabel("Email").fill(`flow+${Date.now()}@nodera.test`);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL("**/dashboard");
+  await signUp(page, "Flow Tester", `flow+${Date.now()}@nodera.test`);
   await page.getByRole("button", { name: "Skip", exact: true }).click();
   const { workspaces } = await (await page.request.get("/api/workspaces")).json();
   const ws = workspaces[0].id as string;
@@ -225,12 +229,7 @@ test("natural-language create, goal pulse, celebration and map focus", async ({ 
 });
 
 test("path to a goal shows blockers, and structures drop onto free space", async ({ page }) => {
-  await page.goto("/register");
-  await page.getByLabel("Name").fill("Path Tester");
-  await page.getByLabel("Email").fill(`pathx+${Date.now()}@nodera.test`);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL("**/dashboard");
+  await signUp(page, "Path Tester", `pathx+${Date.now()}@nodera.test`);
   await page.getByRole("button", { name: "Skip", exact: true }).click();
   const { workspaces } = await (await page.request.get("/api/workspaces")).json();
   const { map } = await (await page.request.post(`/api/maps?ws=${workspaces[0].id}`, { data: { template: "startup", locale: "en" } })).json();
@@ -253,4 +252,96 @@ test("path to a goal shows blockers, and structures drop onto free space", async
   const boxes = await page.locator(".react-flow__node").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ l: r.left, t: r.top, r: r.right, b: r.bottom })));
   const overlaps = boxes.some((a, i) => boxes.some((b, j) => i < j && a.l < b.r - 2 && a.r > b.l + 2 && a.t < b.b - 2 && a.b > b.t + 2));
   expect(overlaps).toBe(false);
+});
+
+test("sign-up needs the emailed code, and a forgotten password can be reset", async ({ page }) => {
+  const mail = `code+${Date.now()}@nodera.test`;
+  await page.goto("/register");
+  await page.getByLabel("Name").fill("Code Tester");
+  await page.getByLabel("Email").fill("someone@mailinator.com");
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.locator("[role=alert]:not(#__next-route-announcer__)")).toContainText("temporary inboxes");
+
+  await page.getByLabel("Email").fill(mail);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  // Nothing exists until the code is confirmed.
+  expect((await page.request.post("/api/auth/login", { data: { email: mail, password } })).status()).toBe(401);
+  const code = (await page.getByTestId("dev-code").textContent())!.trim();
+  await page.getByLabel("Code from the email").fill(code === "000000" ? "111111" : "000000");
+  await expect(page.locator("[role=alert]:not(#__next-route-announcer__)")).toContainText("Wrong code");
+  await page.getByLabel("Code from the email").fill(code);
+  await page.waitForURL("**/dashboard");
+
+  // Forgot password → code → new password → signed in; the old password stops working.
+  await page.request.post("/api/auth/logout");
+  await page.context().clearCookies();
+  await page.goto("about:blank");
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Forgot password?" }).click();
+  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+  await page.getByLabel("Email").fill(mail);
+  await page.getByRole("button", { name: "Send code" }).click();
+  await page.getByLabel("New password").fill("brand-new-password-9");
+  await enterEmailCode(page);
+  await page.getByRole("button", { name: "Save new password" }).click();
+  await page.waitForURL("**/dashboard");
+  expect((await page.request.post("/api/auth/login", { data: { email: mail, password } })).status()).toBe(401);
+  expect((await page.request.post("/api/auth/login", { data: { email: mail, password: "brand-new-password-9" } })).ok()).toBeTruthy();
+});
+
+test("admin panel lives only on its own subdomain, behind password + email code", async ({ page, playwright, baseURL }) => {
+  // On the main site the panel and its API don't exist.
+  expect((await page.goto("/admin"))!.status()).toBe(404);
+  expect((await page.request.post("/api/admin/login", { data: { email: "x@y.z", password: "x" } })).status()).toBe(404);
+
+  // Accounts: the admin (listed in ADMIN_EMAILS) and an ordinary customer.
+  const api = await playwright.request.newContext({ baseURL });
+  const mk = async (mail: string) => {
+    const r = await api.post("/api/auth/register", { data: { name: mail.split("@")[0], email: mail, password } });
+    expect(r.ok()).toBeTruthy();
+    const { devCode } = await r.json();
+    expect((await api.post("/api/auth/verify", { data: { email: mail, code: devCode } })).ok()).toBeTruthy();
+  };
+  const adminMail = process.env.E2E_ADMIN_EMAIL ?? "admin-e2e@nodera.test";
+  await api.post("/api/auth/login", { data: { email: adminMail, password } }).then((r) => (r.ok() ? null : mk(adminMail)));
+  const customer = `customer+${Date.now()}@nodera.test`;
+  await mk(customer);
+
+  const admin = new URL(baseURL!);
+  admin.hostname = `admin.${admin.hostname}`;
+  await page.goto(admin.toString());
+  await page.waitForURL("**/login");
+  await page.waitForLoadState("networkidle");
+  // A real customer with the right password is still refused.
+  await page.getByLabel("Пошта").fill(customer);
+  await page.getByLabel("Пароль").fill(password);
+  await page.getByRole("button", { name: "Увійти" }).click();
+  await expect(page.locator("[role=alert]:not(#__next-route-announcer__)")).toContainText("Невірна пошта або пароль");
+
+  await page.getByLabel("Пошта").fill(adminMail);
+  await page.getByRole("button", { name: "Увійти" }).click();
+  await enterEmailCode(page, "Код з листа");
+  await page.getByRole("button", { name: "Підтвердити" }).click();
+  await expect(page.getByRole("heading", { name: "Огляд" })).toBeVisible();
+
+  await page.getByRole("link", { name: /Клієнти/ }).first().click();
+  await page.getByLabel("Пошук").fill(customer);
+  await page.getByRole("button", { name: "Знайти" }).click();
+  await page.getByRole("link", { name: new RegExp(customer.replace(/[+.]/g, "\\$&")) }).click();
+  await page.getByPlaceholder(/Примітка/).fill("бета-тестер");
+  await page.getByRole("button", { name: "Видати доступ" }).click();
+  await expect(page.getByText("Доступ видано")).toBeVisible();
+  await expect(page.getByText("«бета-тестер»")).toBeVisible();
+
+  await page.getByRole("link", { name: /Журнал дій/ }).click();
+  await expect(page.getByText("🎁 Видано тариф").first()).toBeVisible();
+  await expect(page.getByText("⛔ Невдала спроба входу").first()).toBeVisible();
+
+  // The grant really changed the customer's plan.
+  const me = await (await api.post("/api/auth/login", { data: { email: customer, password } })).json();
+  expect(me.user.email).toBe(customer);
+  const { user } = await (await api.get("/api/me")).json();
+  expect(user.plan).toBe("PRO");
 });

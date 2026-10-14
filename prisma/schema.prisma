@@ -118,6 +118,7 @@ model User {
   locale       String   @default("en")
   aiEnabled    Boolean  @default(true)
   onboardedAt  DateTime?
+  emailVerifiedAt DateTime?
   dashboardLayout Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -128,6 +129,9 @@ model User {
   activities   Activity[]
   reminders    Reminder[]
   suggestions  AiSuggestion[]
+  subscriptions Subscription[]
+  payments     Payment[]
+  adminSessions AdminSession[]
 }
 
 model Session {
@@ -622,4 +626,102 @@ model AiSuggestion {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, createdAt])
+}
+
+// ── Accounts & billing ──────────────────────────────────────────────────────
+
+/** One-time 6-digit codes sent by email (sign-up, password reset, admin sign-in). */
+model EmailCode {
+  id         String    @id @default(cuid())
+  email      String
+  purpose    String    // signup | reset | admin
+  codeHash   String
+  payload    Json?     // signup: { name, passwordHash, locale } until the code is confirmed
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, purpose])
+}
+
+/** Fixed-window counters shared by every server instance. */
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+model Subscription {
+  id               String             @id @default(cuid())
+  userId           String
+  plan             Plan
+  period           String             // month | year | manual
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd DateTime
+  cancelAtPeriodEnd Boolean           @default(false)
+  provider         String             @default("manual") // manual | wayforpay | liqpay | paddle …
+  providerRef      String?
+  note             String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status, currentPeriodEnd])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  userId      String?
+  amount      Int      // minor units (kopecks / cents)
+  fee         Int      @default(0)
+  currency    String   @default("UAH")
+  status      String   // paid | failed | refunded
+  plan        Plan?
+  period      String?
+  provider    String
+  providerRef String?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model AdminSession {
+  id        String   @id // sha256 of the cookie token
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ip        String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  email     String
+  action    String   // login | login_failed | grant_plan | revoke_plan | logout_user | export
+  target    String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

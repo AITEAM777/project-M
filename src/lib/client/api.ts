@@ -24,7 +24,7 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
     body: json !== undefined ? JSON.stringify(json) : rest.body,
     credentials: "same-origin",
   });
-  if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/api/auth")) {
+  if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/api/auth") && !path.startsWith("/api/admin")) {
     window.location.href = `/login?next=${encodeURIComponent(location.pathname)}`;
     throw new ApiError(401, "Session expired");
   }

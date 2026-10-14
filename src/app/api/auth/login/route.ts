@@ -9,7 +9,7 @@ const DUMMY_HASH = "$2b$12$C6UzMDM.H6dfI/f/IKcEeO5n0o2n0g3pQ3ZG9qk6p5pZ0vXyN2a4K
 
 export const POST = route(async (req) => {
   const body = await parseBody(req, loginSchema);
-  rateLimit(`login:${clientIp(req)}:${body.email}`, 10, 15 * 60_000);
+  await rateLimit(`login:${clientIp(req)}:${body.email}`, 10, 15 * 60_000);
   const user = await prisma.user.findUnique({ where: { email: body.email } });
   const ok = await verifyPassword(body.password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !ok) {

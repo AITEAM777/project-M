@@ -5,16 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
 import { api } from "@/lib/client/api";
 import { useWorkspace } from "@/lib/client/store";
-import { Arrow } from "@/components/landing/ui";
+import { authInputCls as inputCls, CodeStep, FormError, SubmitButton } from "./code-step";
 
-const inputCls =
-  "auth-input h-12 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-[15.5px] text-[var(--text)] outline-none transition-[border-color,box-shadow] placeholder:text-[#A3A6AF] hover:border-[#D6D0C4] focus:border-[var(--brand)] focus:shadow-[0_0_0_4px_rgba(95,86,176,.14)] focus-visible:outline-none";
-
-function TextField({ label, hint, children }: { label: string; hint?: React.ReactNode; children: (id: string) => React.ReactNode }) {
+export function TextField({ label, hint, aside, children }: { label: string; hint?: React.ReactNode; aside?: React.ReactNode; children: (id: string) => React.ReactNode }) {
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-[13.5px] font-medium text-[var(--text-muted)]">{label}</label>
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="block text-[13.5px] font-medium text-[var(--text-muted)]">{label}</label>
+        {aside}
+      </div>
       {children(id)}
       {hint}
     </div>
@@ -22,7 +22,7 @@ function TextField({ label, hint, children }: { label: string; hint?: React.Reac
 }
 
 /** 0–4: length, mixed case, digits, symbols. */
-function strength(p: string) {
+export function strength(p: string) {
   if (!p) return 0;
   let s = p.length >= 8 ? 1 : 0;
   if (p.length >= 12) s++;
@@ -31,10 +31,21 @@ function strength(p: string) {
   return Math.min(4, s);
 }
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function useFinishAuth() {
   const router = useRouter();
   const params = useSearchParams();
+  return () => {
+    useWorkspace.setState({ id: null }); // pick the user's workspace fresh
+    const next = params.get("next");
+    router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
+    router.refresh();
+  };
+}
+
+export function AuthForm({ mode, resetEnabled, onCodeStep }: { mode: "login" | "register"; resetEnabled?: boolean; onCodeStep?: (on: boolean) => void }) {
+  const finish = useFinishAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [pending, setPending] = useState<{ email: string; devCode?: string } | null>(null);
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,15 +58,29 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setError(null);
     setLoading(true);
     try {
-      await api(`/api/auth/${mode}`, { method: "POST", json: mode === "login" ? { email: form.email, password: form.password } : { ...form, locale: getLocale() }, ws: null });
-      useWorkspace.setState({ id: null }); // pick the user's workspace fresh
-      const next = params.get("next");
-      router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
-      router.refresh();
+      const r = await api<{ needsCode?: boolean; email?: string; devCode?: string }>(`/api/auth/${mode}`, { method: "POST", json: mode === "login" ? { email: form.email, password: form.password } : { ...form, locale: getLocale() }, ws: null });
+      if (r.needsCode && r.email) {
+        setPending({ email: r.email, devCode: r.devCode });
+        onCodeStep?.(true);
+        setLoading(false);
+        return;
+      }
+      finish();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
     }
+  }
+
+  if (pending) {
+    return (
+      <CodeStep email={pending.email} purpose="signup" devCode={pending.devCode} submitLabel={tr("Confirm and create account")}
+        onBack={() => { setPending(null); onCodeStep?.(false); }}
+        onSubmit={async (code) => {
+          await api("/api/auth/verify", { method: "POST", json: { email: pending.email, code }, ws: null });
+          finish();
+        }} />
+    );
   }
 
   return (
@@ -70,6 +95,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </TextField>
       <TextField
         label={tr("Password")}
+        aside={mode === "login" && resetEnabled && <Link href="/forgot" className="text-[13px] font-semibold text-[var(--brand)] hover:underline">{tr("Forgot password?")}</Link>}
         hint={mode === "register" && (
           <div className="mt-2.5 flex items-center gap-3" aria-live="polite">
             <div className="flex flex-1 gap-1" aria-hidden>
@@ -92,13 +118,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           </div>
         )}
       </TextField>
-      {error && <p role="alert" className="rounded-xl border border-[#F2D6CC] bg-[#FBEEE9] px-4 py-3 text-[14px] text-[#A1462A]">{error}</p>}
-      <button type="submit" disabled={loading} className="l-btn l-btn-primary !h-12 w-full justify-between !pl-6 disabled:opacity-70">
-        <span>{mode === "login" ? tr("Sign in") : tr("Create account")}</span>
-        <span className="l-btn-arrow">
-          {loading ? <span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden /> : <Arrow />}
-        </span>
-      </button>
+      <FormError error={error} />
+      <SubmitButton loading={loading}>{mode === "login" ? tr("Sign in") : tr("Create account")}</SubmitButton>
       <p className="pt-1 text-center text-[14.5px] text-[var(--text-muted)]">
         {mode === "login" ? (
           <>{tr("New to Nodera?")}{" "}<Link className="font-semibold text-[var(--brand)] hover:underline" href="/register">{tr("Create an account")}</Link></>

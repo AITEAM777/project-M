@@ -23,6 +23,11 @@ export const password = z.string().min(8, "Password must be at least 8 character
 export const LOCALES = ["en", "uk"] as const;
 export const registerSchema = z.object({ name: z.string().trim().min(1, "Name is required").max(80), email, password, locale: z.enum(LOCALES).optional() });
 export const loginSchema = z.object({ email, password: z.string().min(1).max(200) });
+const code = z.string().trim().regex(/^\d{3}\s?\d{3}$/, "Enter the 6-digit code from the email").transform((c) => c.replace(/\s/g, ""));
+export const verifySchema = z.object({ email, code });
+export const resendSchema = z.object({ email, purpose: z.enum(["signup", "reset"]) });
+export const forgotSchema = z.object({ email, locale: z.enum(LOCALES).optional() });
+export const resetSchema = z.object({ email, code, password });
 
 export const workspaceSchema = z.object({ name: z.string().trim().min(1).max(80), icon: z.string().max(8).optional() });
 
