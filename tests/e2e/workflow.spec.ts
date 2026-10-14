@@ -399,3 +399,46 @@ test("plans: limits open the upgrade dialog, trial and Max switch on in test mod
   expect(me.plan).toBe("FREE");
   expect(me.trialAvailable).toBe(true);
 });
+
+test("map cards survive leaving the map and coming back", async ({ page }) => {
+  await signUp(page, "Map Saver", `mapsave+${Date.now()}@nodera.test`);
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  await page.goto("/maps");
+  await page.getByRole("button", { name: "New map" }).click();
+  await page.getByLabel("Title").fill("Saved map");
+  await page.getByRole("button", { name: "Create map" }).click();
+  await page.waitForURL("**/maps/**");
+  const url = page.url();
+  await page.locator(".react-flow__node").first().waitFor();
+  const pane = page.locator(".react-flow__pane");
+
+  // Visit the map once so a copy of it is loaded, then add cards.
+  await pane.dblclick({ position: { x: 300, y: 600 } });
+  await expect(page.getByLabel("Node title")).toBeFocused();
+  await page.keyboard.type("First card");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+
+  // Leave inside the app and come back: the cards must still be there.
+  await page.getByRole("link", { name: "Dashboard" }).first().click();
+  await page.waitForURL("**/dashboard");
+  await page.goBack();
+  await page.waitForURL(url);
+  await expect(page.locator(".react-flow__node", { hasText: "First card" })).toBeVisible();
+
+  // Add a card and leave right away (before autosave fires): the closing flush saves it.
+  await pane.dblclick({ position: { x: 700, y: 650 } });
+  await expect(page.getByLabel("Node title")).toBeFocused();
+  await page.keyboard.type("Quick card");
+  await page.keyboard.press("Enter");
+  await page.getByRole("link", { name: "Dashboard" }).first().click();
+  await page.waitForURL("**/dashboard");
+  await page.goBack();
+  await page.waitForURL(url);
+  await expect(page.locator(".react-flow__node", { hasText: "Quick card" })).toBeVisible();
+  await expect(page.locator(".react-flow__node", { hasText: "First card" })).toBeVisible();
+
+  // And after a full reload.
+  await page.reload();
+  await expect(page.locator(".react-flow__node", { hasText: "Quick card" })).toBeVisible();
+});

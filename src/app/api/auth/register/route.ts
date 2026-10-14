@@ -14,7 +14,8 @@ import { isAdminEmail } from "@/server/admin";
  * (password already hashed) until the 6-digit code is confirmed at /api/auth/verify.
  */
 export const POST = route(async (req) => {
-  await rateLimit(`register:${clientIp(req)}`, 10, 60 * 60_000);
+  // Local development / e2e runs (codes shown on screen, never on Vercel production) sign up many accounts.
+  await rateLimit(`register:${clientIp(req)}`, mailMode() === "log" ? 200 : 10, 60 * 60_000);
   const body = await parseBody(req, registerSchema);
   if (isDisposableEmail(body.email)) throw new HttpError(400, "Please use your real email address — temporary inboxes aren't supported.");
   const exists = await prisma.user.findUnique({ where: { email: body.email } });

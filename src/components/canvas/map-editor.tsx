@@ -14,8 +14,8 @@ import {
   ArrowLeft, BoxSelect, Check, ChevronDown, CloudOff, Group, LayoutGrid, Loader2, Map as MapIcon, MoreHorizontal, Plus, Redo2, Search,
   Undo2, Ungroup, Waves, X,
 } from "lucide-react";
-import { api, invalidate, patch, post, put, useApi } from "@/lib/client/api";
-import { confirm, toast, useUpgrade } from "@/lib/client/store";
+import { api, invalidate, patch, post, put, withParams } from "@/lib/client/api";
+import { confirm, toast, useUpgrade, useWorkspace } from "@/lib/client/store";
 import { reportGoals, type GoalDelta } from "@/lib/client/celebrate";
 import { useMe, useMediaQuery } from "@/lib/client/hooks";
 import { cn, uid } from "@/lib/utils";
@@ -44,8 +44,27 @@ interface MapResponse {
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
+/** Saves still in flight when an editor closes; opening that map again waits for them first. */
+const pendingSaves = new Map<string, Promise<unknown>>();
+
 export function MapEditor({ mapId }: { mapId: string }) {
-  const { data, error } = useApi<MapResponse>(`/api/maps/${mapId}`, { revalidateOnFocus: false, revalidateIfStale: false, keepPreviousData: false });
+  // Always load the graph fresh from the server — never from a cache — so returning to a
+  // map shows exactly what was saved, and autosave can't overwrite it with an old copy.
+  const [{ data, error }, setLoaded] = useState<{ data?: MapResponse; error?: Error }>({});
+  useEffect(() => {
+    let alive = true;
+    setLoaded({});
+    (async () => {
+      try {
+        await pendingSaves.get(mapId)?.catch(() => {});
+        const fresh = await api<MapResponse>(`/api/maps/${mapId}`);
+        if (alive) setLoaded({ data: fresh });
+      } catch (e) {
+        if (alive) setLoaded({ error: e as Error });
+      }
+    })();
+    return () => { alive = false; };
+  }, [mapId]);
   if (error) return <div className="grid h-full place-items-center p-6 text-center text-sm text-muted">{tr("Could not open this map:")}{" "}{error.message}<br /><Link href="/maps" className="mt-2 text-accent">{tr("Back to maps")}</Link></div>;
   if (!data || data.map.id !== mapId) return <div className="grid h-full place-items-center"><Spinner className="size-7" /></div>;
   return (
@@ -146,10 +165,19 @@ function Editor({ initial }: { initial: MapResponse }) {
       unsub();
       window.removeEventListener("beforeunload", beforeUnload);
       if (timer.current) clearTimeout(timer.current);
+      const inFlight = saving.current;
+      let last: Promise<unknown> | null = inFlight;
       if (dirty.current) {
         const { nodes, edges } = store.getState();
-        // Best-effort flush when navigating away inside the app.
-        fetch(`/api/maps/${mapId}/graph`, { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nodes: toNodeInputs(nodes), edges: toEdgeInputs(edges) }) }).catch(() => {});
+        const body = JSON.stringify({ nodes: toNodeInputs(nodes), edges: toEdgeInputs(edges) });
+        // Flush when navigating away inside the app — after any save already on its way,
+        // so an older snapshot can never land after the newest one.
+        last = (inFlight ?? Promise.resolve()).catch(() => {}).then(() =>
+          fetch(withParams(`/api/maps/${mapId}/graph`, useWorkspace.getState().id), { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json" }, body }));
+      }
+      if (last) {
+        const tracked: Promise<unknown> = last.catch(() => {}).finally(() => { if (pendingSaves.get(mapId) === tracked) pendingSaves.delete(mapId); });
+        pendingSaves.set(mapId, tracked);
       }
       invalidate("/api/maps", "/api/dashboard");
     };
