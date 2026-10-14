@@ -473,6 +473,15 @@ function Editor({ initial, onReload }: { initial: MapResponse; onReload: () => v
       s.set(() => ({ editingId: null }));
       wrapper.current?.focus();
     },
+    editText: (id) => store.getState().set(() => ({ editingId: null, editingTextId: id })),
+    finishText: (id, value) => {
+      const s = store.getState();
+      const n = s.nodes.find((x) => x.id === id);
+      const text = value?.replace(/\s+$/, "");
+      if (n && text !== undefined && text !== n.data.description) s.updateNode(id, { description: text });
+      s.set(() => ({ editingTextId: null }));
+      wrapper.current?.focus();
+    },
   }), [store, addChild, setTaskStatus, toggleHabitToday, startFocus, startPath, proTools]);
 
   const panelActions: PanelActions = useMemo(() => ({
@@ -511,11 +520,23 @@ function Editor({ initial, onReload }: { initial: MapResponse; onReload: () => v
   }, [store, defaultRelation]);
 
   const onConnectEnd: OnConnectEnd = useCallback((event, state: FinalConnectionState) => {
+    wrapper.current?.classList.remove("map-connecting");
     if (state.isValid || !state.fromNode) return;
     const pt = "changedTouches" in event ? event.changedTouches[0] : (event as MouseEvent);
+    // Dropped anywhere on a card (not just its tiny dot) → connect to that card, on the nearest side.
+    const hit = document.elementsFromPoint(pt.clientX, pt.clientY)
+      .map((el) => el.closest<HTMLElement>(".react-flow__node"))
+      .find((el) => el && el.dataset.id && el.dataset.id !== state.fromNode!.id);
+    if (hit) {
+      const r = hit.getBoundingClientRect();
+      const d = { l: pt.clientX - r.left, r: r.right - pt.clientX, t: pt.clientY - r.top, b: r.bottom - pt.clientY };
+      const side = (Object.keys(d) as (keyof typeof d)[]).reduce((a, b) => (d[b] < d[a] ? b : a));
+      onConnect({ source: state.fromNode.id, target: hit.dataset.id!, sourceHandle: state.fromHandle?.id ?? null, targetHandle: hit.classList.contains("react-flow__node-group") ? null : side });
+      return;
+    }
     const pos = rf.screenToFlowPosition({ x: pt.clientX, y: pt.clientY });
     createNodeAt({ x: pos.x - 110, y: pos.y - 24 }, { from: state.fromNode.id });
-  }, [rf, createNodeAt]);
+  }, [rf, createNodeAt, onConnect]);
 
   const onPaneDoubleClick = (e: React.MouseEvent) => {
     if (!(e.target as HTMLElement).classList.contains("react-flow__pane")) return;
@@ -721,6 +742,7 @@ function Editor({ initial, onReload }: { initial: MapResponse; onReload: () => v
           onSelectionDragStart={() => store.getState().checkpoint()}
           onConnect={onConnect}
           onConnectEnd={onConnectEnd}
+          onConnectStart={() => wrapper.current?.classList.add("map-connecting")}
           onNodeDoubleClick={(_, n) => store.getState().set(() => ({ editingId: n.id }))}
           onNodeClick={() => setPanelOpen(true)}
           onEdgeClick={() => setPanelOpen(true)}
@@ -729,6 +751,7 @@ function Editor({ initial, onReload }: { initial: MapResponse; onReload: () => v
           fitView={!initial.map.viewport}
           fitViewOptions={{ padding: 0.2, maxZoom: 1.1 }}
           connectionMode={ConnectionMode.Loose}
+          connectionRadius={40}
           deleteKeyCode={null}
           selectionKeyCode="Shift"
           multiSelectionKeyCode={["Meta", "Control", "Shift"]}

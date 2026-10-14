@@ -513,3 +513,38 @@ test("edits that could not be saved are kept on the device and can be restored",
   await expect(page.locator(".react-flow__node", { hasText: "Offline card" })).toBeVisible();
   await expect(page.getByTestId("map-draft")).toHaveCount(0);
 });
+
+test("dropping a connection anywhere on a card connects to it; cards show their text", async ({ page }) => {
+  await signUp(page, "Connector", `connect+${Date.now()}@nodera.test`);
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  const url = await newMap(page, "Connect map");
+  await addCard(page, "Target card", 900, 600);
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  const edges = page.locator(".react-flow__edge");
+  const before = await edges.count();
+  const nodesBefore = await page.locator(".react-flow__node").count();
+
+  // Drag from the first card's right dot and let go in the middle of the target card (not on a dot).
+  const source = page.locator(".react-flow__node").first();
+  await source.hover();
+  const dot = await source.locator(".react-flow__handle-right").boundingBox();
+  const target = await page.locator(".react-flow__node", { hasText: "Target card" }).boundingBox();
+  await page.mouse.move(dot!.x + dot!.width / 2, dot!.y + dot!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target!.x + target!.width / 2 - 20, target!.y + target!.height / 2, { steps: 12 });
+  await page.mouse.move(target!.x + target!.width / 2, target!.y + target!.height / 2 + 4, { steps: 4 });
+  await page.mouse.up();
+  await expect(edges).toHaveCount(before + 1);
+  await expect(page.locator(".react-flow__node")).toHaveCount(nodesBefore);
+
+  // Write text right on the card: it's visible on the map without opening the side panel.
+  await page.locator(".react-flow__node", { hasText: "Target card" }).click();
+  await page.getByRole("button", { name: "Add text" }).click();
+  await page.getByLabel("Card text").fill("Line one\nLine two of my thought");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".react-flow__node", { hasText: "Line two of my thought" })).toBeVisible();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.goto(url);
+  await expect(page.locator(".react-flow__node", { hasText: "Line two of my thought" })).toBeVisible();
+  await expect(page.locator(".react-flow__edge")).toHaveCount(before + 1);
+});

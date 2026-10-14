@@ -1287,4 +1287,8 @@ export const uk: Record<string, string> = {
  "Discard": "Відкинути",
  "Unsaved changes restored": "Незбережені зміни відновлено",
  "Paused": "Призупинено",
+ "Write your thought…": "Напишіть свою думку…",
+ "Card text": "Текст картки",
+ "Double-click to edit": "Двічі клацніть, щоб змінити",
+ "Add text": "Додати текст",
 };

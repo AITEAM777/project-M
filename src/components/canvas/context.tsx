@@ -13,6 +13,9 @@ export interface MapActions {
   toggleCollapse: (nodeId: string) => void;
   addChild: (nodeId: string) => void;
   finishEdit: (nodeId: string, title: string | null) => void;
+  /** Starts editing a card's text on the canvas. */
+  editText: (nodeId: string) => void;
+  finishText: (nodeId: string, text: string | null) => void;
 }
 
 export const MapCtx = createContext<{ store: MapStore; mapId: string; actions: MapActions; readOnly: boolean } | null>(null);

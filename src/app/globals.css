@@ -160,7 +160,11 @@ body {
 .react-flow__edge-path { stroke: var(--border-strong); stroke-width: 1.6; }
 .react-flow__edge.selected .react-flow__edge-path, .react-flow__edge:hover .react-flow__edge-path { stroke: var(--accent); }
 .react-flow__handle { width: 10px; height: 10px; background: var(--surface); border: 2px solid var(--accent); opacity: 0; transition: opacity 0.12s; }
-.react-flow__node:hover .react-flow__handle, .react-flow__node.selected .react-flow__handle, .react-flow.connecting .react-flow__handle { opacity: 1; }
+.react-flow__node:hover .react-flow__handle, .react-flow__node.selected .react-flow__handle, .map-connecting .react-flow__handle { opacity: 1; }
+/* Easier to grab and to hit: a dot's touch area is ~3x its size, and while dragging a connection
+   the whole card under the pointer lights up — dropping anywhere on it connects. */
+.react-flow__handle::after { content: ""; position: absolute; inset: -9px; border-radius: 9999px; }
+.map-connecting .react-flow__node-mind:hover > div { border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
 .react-flow__node.dimmed { opacity: 0.25; }
 .react-flow__edge.dimmed { opacity: 0.12; }
 .react-flow__connection-path { stroke: var(--accent); stroke-width: 2; }

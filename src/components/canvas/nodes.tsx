@@ -22,7 +22,7 @@ function Handles() {
   );
 }
 
-function InlineTitle({ id, title }: { id: string; title: string }) {
+function InlineTitle({ id, title, group = false }: { id: string; title: string; group?: boolean }) {
   const { actions } = useMapCtx();
   const [v, setV] = useState(title);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -50,6 +50,8 @@ function InlineTitle({ id, title }: { id: string; title: string }) {
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); actions.finishEdit(id, v); }
+        // Shift+Enter: keep going and write the card's text.
+        if (e.key === "Enter" && e.shiftKey && !group) { e.preventDefault(); actions.finishEdit(id, v); actions.editText(id); }
         if (e.key === "Escape") actions.finishEdit(id, null);
       }}
       className="nodrag nowheel w-full resize-none bg-transparent text-[13.5px] font-medium leading-snug outline-none"
@@ -58,9 +60,45 @@ function InlineTitle({ id, title }: { id: string; title: string }) {
   );
 }
 
+/** The card's text, written right on the canvas. Enter = new line; Esc, ⌘↵ or clicking away saves. */
+function InlineText({ id, text }: { id: string; text: string }) {
+  const { actions } = useMapCtx();
+  const [v, setV] = useState(text);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [v]);
+  return (
+    <textarea
+      ref={ref}
+      value={v}
+      rows={2}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => actions.finishText(id, v)}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Escape" || (e.key === "Enter" && (e.metaKey || e.ctrlKey))) { e.preventDefault(); actions.finishText(id, v); }
+      }}
+      placeholder={tr("Write your thought…")}
+      className="nodrag nowheel mt-1.5 block w-full resize-none overflow-hidden rounded-md bg-[var(--surface-2)] px-1.5 py-1 text-[12.5px] leading-snug text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
+      aria-label={tr("Card text")}
+    />
+  );
+}
+
 export const MindNodeView = memo(function MindNodeView({ id, data, selected }: NodeProps<MindNode>) {
   const { actions, readOnly } = useMapCtx();
   const editing = useMap((s) => s.editingId === id);
+  const editingText = useMap((s) => s.editingTextId === id);
   const searching = useMap((s) => s.search.length > 0);
   const [pop, setPop] = useState(false);
   const single = useMap((s) => { let k = 0; for (const n of s.nodes) if (n.selected && ++k > 1) return false; return k === 1; });
@@ -129,6 +167,21 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
             )}
           </div>
         </div>
+        {!isCircle && (editingText ? (
+          <InlineText id={id} text={data.description} />
+        ) : data.description ? (
+          <p
+            onDoubleClick={(e) => { if (readOnly) return; e.stopPropagation(); actions.editText(id); }}
+            className="mt-1.5 line-clamp-[12] whitespace-pre-wrap break-words text-[12.5px] leading-snug text-[var(--text-2)]"
+            title={readOnly ? undefined : tr("Double-click to edit")}
+          >
+            {data.description}
+          </p>
+        ) : selected && single && !readOnly && !editing && (
+          <button onClick={(e) => { e.stopPropagation(); actions.editText(id); }} className="nodrag mt-1 flex items-center gap-1 rounded-md px-1 py-0.5 text-[11.5px] text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--accent)]">
+            <Plus className="size-3" />{tr("Add text")}
+          </button>
+        ))}
         <div className={cn("mt-1.5 flex flex-wrap items-center gap-1.5 text-[10.5px] text-[var(--muted)]", isCircle && "justify-center")}>
           <span className="font-medium uppercase tracking-wide" style={{ color }}>{meta.label}</span>
           {l?.note && <FileText className="size-3" aria-label={tr("Has note")} />}
@@ -181,7 +234,7 @@ export const GroupNodeView = memo(function GroupNodeView({ id, data, selected }:
     <div className="h-full w-full rounded-2xl border-2 border-dashed" style={{ borderColor: `${color}66`, background: `${color}0d` }}>
       <NodeResizer isVisible={selected} minWidth={200} minHeight={120} lineClassName="!border-[var(--accent)]" handleClassName="!size-2.5 !bg-[var(--surface)] !border-[var(--accent)]" />
       <div className="absolute -top-3 left-4 rounded-md px-2 py-0.5 text-xs font-semibold" style={{ background: "var(--surface)", color, border: `1px solid ${color}55` }}>
-        {editing ? <InlineTitle id={id} title={data.title} /> : (data.icon ? `${data.icon} ` : "") + (data.title || "Group")}
+        {editing ? <InlineTitle id={id} title={data.title} group /> : (data.icon ? `${data.icon} ` : "") + (data.title || "Group")}
       </div>
     </div>
   );

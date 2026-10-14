@@ -14,6 +14,8 @@ export interface MapState {
   version: number;
   viewport: Viewport | null;
   editingId: string | null;
+  /** Card whose text (description) is being edited right on the canvas. */
+  editingTextId: string | null;
   search: string;
   set: (fn: (s: MapState) => Partial<MapState>) => void;
   checkpoint: () => void;
@@ -40,6 +42,7 @@ export const createMapStore = (nodes: MindNode[], edges: RelationEdge[], viewpor
     version: 0,
     viewport,
     editingId: null,
+    editingTextId: null,
     search: "",
     set: (fn) => set(fn(get())),
     checkpoint: () => {
