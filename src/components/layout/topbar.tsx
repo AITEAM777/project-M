@@ -1,6 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
-import { planName, useBilling } from "@/lib/client/billing";
+import { BILLING_URL, planName, useBilling } from "@/lib/client/billing";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell, CalendarPlus, CreditCard, CheckSquare, FilePlus2, FolderPlus, Goal, Lightbulb, LogOut, Menu, Moon, Plus, Repeat, Search, Settings, Sun, Workflow, Zap } from "lucide-react";
@@ -97,7 +97,7 @@ export function Topbar({ user }: { user: ShellUser }) {
             <div className="px-2.5 pb-2"><LanguageSwitcher className="w-full [&>button]:flex-1 [&>button]:justify-center" /></div>
             <MenuSeparator />
             <MenuItem icon={<><Moon className="dark:hidden" /><Sun className="hidden dark:block" /></>} onClick={() => { close(); toggleTheme(); }}><span className="dark:hidden">{tr("Dark mode")}</span><span className="hidden dark:inline">{tr("Light mode")}</span></MenuItem>
-            <MenuItem icon={<CreditCard />} onClick={() => { close(); router.push("/billing"); }}><span className="flex flex-1 items-center justify-between gap-3">{tr("Plan & billing")}<PlanTag /></span></MenuItem>
+            <MenuItem icon={<CreditCard />} onClick={() => { close(); router.push(BILLING_URL); }}><span className="flex flex-1 items-center justify-between gap-3">{tr("Plan & billing")}<PlanTag /></span></MenuItem>
             <MenuItem icon={<Settings />} onClick={() => { close(); router.push("/settings"); }}>{tr("Settings")}</MenuItem>
             <MenuSeparator />
             <MenuItem icon={<LogOut />} onClick={logout}>{tr("Sign out")}</MenuItem>
@@ -113,7 +113,7 @@ function ProButton() {
   const { data } = useBilling();
   if (!data || data.plan !== "FREE") return null;
   return (
-    <Link href="/billing" data-tour="pro-button" className="hidden h-8 items-center gap-1 rounded-lg bg-gradient-to-br from-[#6E5BF0] to-[#4338CA] px-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(67,56,202,.6)] hover:brightness-110 sm:inline-flex">
+    <Link href={BILLING_URL} data-tour="pro-button" className="hidden h-8 items-center gap-1 rounded-lg bg-gradient-to-br from-[#6E5BF0] to-[#4338CA] px-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(67,56,202,.6)] hover:brightness-110 sm:inline-flex">
       <Zap className="size-3.5" />Pro
     </Link>
   );

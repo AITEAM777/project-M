@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { toast, useUpgrade, type UpgradeReason } from "@/lib/client/store";
-import { choosePlan, monthly, planName, useBilling, type Period } from "@/lib/client/billing";
+import { BILLING_URL, choosePlan, monthly, planName, useBilling, type Period } from "@/lib/client/billing";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -84,7 +84,7 @@ export function UpgradeDialog() {
       {billing.mode === "test" && <TestModeNote className="mt-3" />}
       <div className="mt-3 flex items-center justify-between text-sm">
         <button onClick={close} className="text-muted hover:text-text">{tr("Not now")}</button>
-        <Link href="/billing" onClick={close} className="font-medium text-accent hover:underline">{tr("Compare all plans")} →</Link>
+        <Link href={BILLING_URL} onClick={close} className="font-medium text-accent hover:underline">{tr("Compare all plans")} →</Link>
       </div>
     </Dialog>
   );

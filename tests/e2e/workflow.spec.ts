@@ -280,8 +280,9 @@ test("sign-up needs the emailed code, and a forgotten password can be reset", as
   // Forgot password → code → new password → signed in; the old password stops working.
   await page.request.post("/api/auth/logout");
   await page.context().clearCookies();
-  await page.goto("about:blank");
-  await page.goto("/login");
+  // The dashboard may redirect to /login on its own once the session is gone; either way we end up there.
+  await page.goto("/login").catch(() => page.waitForURL("**/login**"));
+  await page.waitForLoadState("networkidle");
   await page.getByRole("link", { name: "Forgot password?" }).click();
   await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
   await page.getByLabel("Email").fill(mail);

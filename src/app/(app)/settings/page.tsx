@@ -1,9 +1,8 @@
 "use client";
 import { tr } from "@/lib/i18n";
-import { planName } from "@/lib/client/billing";
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Download, Monitor, Moon, Sun, Upload } from "lucide-react";
 import { api, patch, post, withParams } from "@/lib/client/api";
 import { applyTheme, useMe } from "@/lib/client/hooks";
@@ -13,10 +12,26 @@ import { Field, Input } from "@/components/ui/input";
 import { Badge, Card, PageSkeleton } from "@/components/ui/misc";
 import { Dialog } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { BillingPanel } from "@/components/billing/billing-panel";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { cn } from "@/lib/utils";
 
+const TABS = [
+  { id: "profile", label: "Profile" },
+  { id: "appearance", label: "Appearance" },
+  { id: "billing", label: "Plan & billing" },
+  { id: "security", label: "Security" },
+  { id: "data", label: "Data" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
+
 export default function SettingsPage() {
+  return <Suspense><Settings /></Suspense>;
+}
+
+function Settings() {
+  const params = useSearchParams();
+  const tab: Tab = TABS.some((t) => t.id === params.get("tab")) ? (params.get("tab") as Tab) : "profile";
   const { data: me, mutate } = useMe();
   const ws = useWorkspace((s) => s.id);
   const router = useRouter();
@@ -31,9 +46,19 @@ export default function SettingsPage() {
   const theme = (t: string) => { applyTheme(t); save({ theme: t }, "Theme updated"); };
 
   return (
-    <div className="max-w-3xl">
+    <div className={tab === "billing" ? "max-w-6xl" : "max-w-3xl"}>
       <PageHeader title={tr("Settings")} />
+      <nav aria-label={tr("Settings sections")} className="-mt-2 mb-6 flex gap-1 overflow-x-auto border-b border-border">
+        {TABS.map((t) => (
+          <Link key={t.id} href={t.id === "profile" ? "/settings" : `/settings?tab=${t.id}`} aria-current={tab === t.id ? "page" : undefined} data-tour={t.id === "data" ? "settings-data" : undefined}
+            className={cn("-mb-px shrink-0 border-b-2 px-3.5 py-2.5 text-sm font-semibold transition-colors", tab === t.id ? "border-accent text-accent" : "border-transparent text-muted hover:text-text")}>
+            {tr(t.label)}
+          </Link>
+        ))}
+      </nav>
+      {tab === "billing" ? <BillingPanel /> : (
       <div className="space-y-5">
+        {tab === "profile" && <>
         <Card className="p-5">
           <h2 className="mb-4 font-semibold">{tr("Profile")}</h2>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -42,13 +67,21 @@ export default function SettingsPage() {
           </div>
           <p className="mt-2 text-sm text-muted">{tr("Signed in as")}{" "}{u.email}</p>
         </Card>
-
         <Card data-tour="settings-language" className="p-5">
           <h2 className="mb-1 font-semibold">{tr("Language")}</h2>
           <p className="mb-3 text-sm text-muted">{tr("Choose the language of the interface.")}</p>
           <LanguageSwitcher />
         </Card>
-
+        <Card className="p-5">
+          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("AI assistant")}</h2>{!me.aiAvailable && <Badge>{tr("Not configured on this server")}</Badge>}</div>
+          <p className="mb-3 text-sm text-muted">{tr("The assistant only reads the workspace data needed for the action you trigger, never changes anything without your confirmation, and clearly marks its suggestions.")}</p>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" className="accent-[var(--accent)]" checked={u.aiEnabled} disabled={!me.aiAvailable} onChange={(e) => save({ aiEnabled: e.target.checked }, e.target.checked ? "AI features enabled" : "AI features disabled")} />
+            {tr("Enable AI features")}
+          </label>
+        </Card>
+        </>}
+        {tab === "appearance" && <>
         <Card className="p-5">
           <h2 className="mb-4 font-semibold">{tr("Appearance")}</h2>
           <div className="grid grid-cols-3 gap-2">
@@ -64,23 +97,27 @@ export default function SettingsPage() {
             {tr("Reduce motion (also follows your system setting)")}
           </label>
         </Card>
-
+        </>}
+        {tab === "security" && <>
         <Card className="p-5">
-          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("AI assistant")}</h2>{!me.aiAvailable && <Badge>{tr("Not configured on this server")}</Badge>}</div>
-          <p className="mb-3 text-sm text-muted">{tr("The assistant only reads the workspace data needed for the action you trigger, never changes anything without your confirmation, and clearly marks its suggestions.")}</p>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="accent-[var(--accent)]" checked={u.aiEnabled} disabled={!me.aiAvailable} onChange={(e) => save({ aiEnabled: e.target.checked }, e.target.checked ? "AI features enabled" : "AI features disabled")} />
-            {tr("Enable AI features")}
-          </label>
+          <h2 className="mb-4 font-semibold">{tr("Password")}</h2>
+          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <Field label={tr("Current password")}><Input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} /></Field>
+            <Field label={tr("New password")}><Input type="password" autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field>
+            <Button loading={busy === "pw"} disabled={!pw.current || pw.next.length < 8} onClick={async () => {
+              setBusy("pw");
+              try { await post("/api/me/password", pw); setPw({ current: "", next: "" }); toast.success(tr("Password changed")); } catch (e) { toast.error(e); } finally { setBusy(null); }
+            }}>{tr("Change")}</Button>
+          </div>
         </Card>
-
+        <Card className="border-danger/30 p-5">
+          <h2 className="mb-1 font-semibold text-danger">{tr("Delete account")}</h2>
+          <p className="mb-3 text-sm text-muted">{tr("Permanently deletes your account, every workspace you own and all files. Export your data first — this cannot be undone.")}</p>
+          <Button variant="outline" className="text-danger" onClick={() => setDel({ ...del, open: true })}>{tr("Delete my account…")}</Button>
+        </Card>
+        </>}
+        {tab === "data" && <>
         <Card className="p-5">
-          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("Plan & limits")}</h2><Badge className="border-accent/30 bg-accent-soft text-accent">{planName(u.plan)}</Badge></div>
-          <p className="mb-3 text-sm text-muted">{tr("See what you use, compare plans and manage your subscription.")}</p>
-          <Link href="/billing"><Button variant="primary" size="sm">{tr("Plan & billing")} →</Button></Link>
-        </Card>
-
-        <Card data-tour="settings-data" className="p-5">
           <h2 className="mb-1 font-semibold">{tr("Your data")}</h2>
           <p className="mb-4 text-sm text-muted">{tr("Export the current workspace any time. JSON exports are complete and can be imported back as a new workspace (backup & restore).")}</p>
           <div className="flex flex-wrap gap-2">
@@ -103,25 +140,9 @@ export default function SettingsPage() {
             }} />
           </div>
         </Card>
-
-        <Card className="p-5">
-          <h2 className="mb-4 font-semibold">{tr("Password")}</h2>
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <Field label={tr("Current password")}><Input type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} /></Field>
-            <Field label={tr("New password")}><Input type="password" autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field>
-            <Button loading={busy === "pw"} disabled={!pw.current || pw.next.length < 8} onClick={async () => {
-              setBusy("pw");
-              try { await post("/api/me/password", pw); setPw({ current: "", next: "" }); toast.success(tr("Password changed")); } catch (e) { toast.error(e); } finally { setBusy(null); }
-            }}>{tr("Change")}</Button>
-          </div>
-        </Card>
-
-        <Card className="border-danger/30 p-5">
-          <h2 className="mb-1 font-semibold text-danger">{tr("Delete account")}</h2>
-          <p className="mb-3 text-sm text-muted">{tr("Permanently deletes your account, every workspace you own and all files. Export your data first — this cannot be undone.")}</p>
-          <Button variant="outline" className="text-danger" onClick={() => setDel({ ...del, open: true })}>{tr("Delete my account…")}</Button>
-        </Card>
+        </>}
       </div>
+      )}
 
       <Dialog open={del.open} onClose={() => setDel({ open: false, password: "", confirm: "" })} title={tr("Delete your account?")} description={tr("This permanently removes all of your data.")}
         footer={<>

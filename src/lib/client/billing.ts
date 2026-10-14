@@ -46,3 +46,5 @@ export function planName(id: string) {
   if (id === "TEAMS") return uk ? "Команди" : "Teams";
   return "Pro";
 }
+
+export const BILLING_URL = "/settings?tab=billing";
