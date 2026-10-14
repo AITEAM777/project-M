@@ -29,6 +29,9 @@ import { decorateEdge, decorateNode, sortParentsFirst, toEdgeInputs, toFlowEdges
 import { KIND_META, RELATION_META, type MindNode, type NodeKind, type Relation, type RelationEdge } from "./types";
 import { AiSummaryButton } from "./ai-summary";
 import { FocusOverlay } from "./focus";
+import { PathOverlay } from "./path-view";
+import { pathToGoal } from "./path";
+import { structureCenter, structures, type Structure } from "./structures";
 import { dayKey } from "@/lib/habits";
 
 interface MapResponse {
@@ -86,6 +89,7 @@ function Editor({ initial }: { initial: MapResponse }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [matchIdx, setMatchIdx] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [pathId, setPathId] = useState<string | null>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
 
@@ -333,13 +337,20 @@ function Editor({ initial }: { initial: MapResponse }) {
   }, [store]);
 
   const startFocus = useCallback((id: string) => {
+    setPathId(null);
     setFocusId(id);
+    setPanelOpen(false);
+  }, []);
+  const startPath = useCallback((id: string) => {
+    setFocusId(null);
+    setPathId(id);
     setPanelOpen(false);
   }, []);
 
   const actions: MapActions = useMemo(() => ({
     toggleHabitToday: (id) => void toggleHabitToday(id),
     focus: startFocus,
+    path: startPath,
     toggleTask: (id) => {
       const st = store.getState().nodes.find((x) => x.id === id)?.data.linked?.task?.status;
       void setTaskStatus(id, st === "DONE" ? "TODO" : "DONE");
@@ -356,7 +367,7 @@ function Editor({ initial }: { initial: MapResponse }) {
       s.set(() => ({ editingId: null }));
       wrapper.current?.focus();
     },
-  }), [store, addChild, setTaskStatus, toggleHabitToday, startFocus]);
+  }), [store, addChild, setTaskStatus, toggleHabitToday, startFocus, startPath]);
 
   const panelActions: PanelActions = useMemo(() => ({
     convert: async (nodeId, to, extra) => {
@@ -381,7 +392,9 @@ function Editor({ initial }: { initial: MapResponse }) {
     select: (id) => selectNode(id),
     flush,
     setTaskStatus,
-  }), [duplicate, remove, flush, mapId, refreshLinked, store, router, selectNode, setTaskStatus]);
+    path: startPath,
+    focus: startFocus,
+  }), [duplicate, remove, flush, mapId, refreshLinked, store, router, selectNode, setTaskStatus, startPath, startFocus]);
 
   /* ---------------- React Flow handlers ---------------- */
   const onConnect = useCallback((c: Connection) => {
@@ -461,6 +474,64 @@ function Editor({ initial }: { initial: MapResponse }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId]);
 
+  /* ---------------- path to goal ---------------- */
+  const pathRef = useRef<string | null>(null);
+  pathRef.current = pathId;
+  const pathInfo = useMemo(() => (pathId && nodes.some((n) => n.id === pathId) ? pathToGoal(pathId, nodes, edges) : null), [pathId, nodes, edges]);
+  useEffect(() => {
+    if (pathId && !nodes.some((n) => n.id === pathId)) setPathId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathId, nodes.length]);
+  useEffect(() => {
+    if (!pathInfo) return;
+    const t = setTimeout(() => rf.fitView({ nodes: [...pathInfo.ids].map((id) => ({ id })), duration: 500, padding: 0.3, maxZoom: 1.2 }), 30);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathId]);
+
+  /* ---------------- structures ---------------- */
+  const insertStructure = useCallback((s: Structure) => {
+    const st = store.getState();
+    const sel = st.nodes.filter((n) => n.selected && n.type !== "group");
+    const anchor = sel.length === 1 ? sel[0] : null;
+    const c = structureCenter(s);
+    let origin: { x: number; y: number };
+    if (anchor) {
+      const p = absPosition(anchor, st.nodes);
+      const root = s.nodes.find((n) => n.key === s.root)!;
+      origin = { x: p.x + 340 - root.x, y: p.y - root.y };
+    } else {
+      const v = rf.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+      origin = { x: v.x - c.x, y: v.y - c.y };
+    }
+    // Never drop a structure on top of existing cards: try the spot, then below / right of the map.
+    const boxes = st.nodes.filter((n) => n.type !== "group").map((n) => { const p = absPosition(n, st.nodes); return { x: p.x, y: p.y, w: n.measured?.width ?? 220, h: n.measured?.height ?? 70 }; });
+    const xs = s.nodes.map((n) => n.x), ys = s.nodes.map((n) => n.y);
+    const sw = Math.max(...xs) - Math.min(...xs) + 220, sh = Math.max(...ys) - Math.min(...ys) + 80;
+    const fits = (o: { x: number; y: number }) => {
+      const L = o.x + Math.min(...xs) - 40, T = o.y + Math.min(...ys) - 40, R = L + sw + 80, B = T + sh + 80;
+      return !boxes.some((b) => b.x < R && b.x + b.w > L && b.y < B && b.y + b.h > T);
+    };
+    if (boxes.length && !fits(origin)) {
+      const minX = Math.min(...boxes.map((b) => b.x)), maxX = Math.max(...boxes.map((b) => b.x + b.w));
+      const minY = Math.min(...boxes.map((b) => b.y)), maxY = Math.max(...boxes.map((b) => b.y + b.h));
+      const below = { x: minX - Math.min(...xs), y: maxY + 160 - Math.min(...ys) };
+      const right = { x: maxX + 220 - Math.min(...xs), y: minY - Math.min(...ys) };
+      origin = fits(below) ? below : right;
+    }
+    const ids = new Map(s.nodes.map((n) => [n.key, uid("n_")]));
+    const newNodes: MindNode[] = s.nodes.map((n) => {
+      const base = newNode(ids.get(n.key)!, { x: Math.round(origin.x + n.x), y: Math.round(origin.y + n.y) }, n.kind, n.title);
+      return { ...base, selected: n.key === s.root, data: { ...base.data, icon: n.icon ?? "", color: n.color ?? "", description: n.description ?? "" } };
+    });
+    const mk = (from: string, to: string, relation: Relation): RelationEdge => ({ id: uid("e_"), source: from, target: to, type: "relation", data: { relation, label: "", description: "", bidirectional: false } });
+    const newEdges = s.edges.map((e) => mk(ids.get(e.from)!, ids.get(e.to)!, e.relation));
+    if (anchor) newEdges.push(mk(anchor.id, ids.get(s.root)!, "LEADS_TO"));
+    st.commit((cur) => ({ nodes: [...cur.nodes.map((n) => (n.selected ? { ...n, selected: false } : n)), ...newNodes], edges: [...cur.edges, ...newEdges] }));
+    setTimeout(() => rf.fitView({ nodes: newNodes.map((n) => ({ id: n.id })), duration: 500, padding: 0.25, maxZoom: 1.1 }), 60);
+    toast.success(tr("Added “{name}” — rename the cards to make it yours", { name: s.name }));
+  }, [store, rf]);
+
   /* ---------------- keyboard ---------------- */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -480,10 +551,11 @@ function Editor({ initial }: { initial: MapResponse }) {
       if (mod && k === "g") { e.preventDefault(); if (e.shiftKey) selNodes.filter((n) => n.type === "group").forEach((g) => ungroup(g.id)); else groupSelection(); return; }
       if (mod && k === "s") { e.preventDefault(); void flush(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { if (selNodes.length || selEdges.length) { e.preventDefault(); remove(selNodes.map((n) => n.id), selEdges.map((x) => x.id)); } return; }
-      if (e.key === "Escape" && focusRef.current) { setFocusId(null); return; }
+      if (e.key === "Escape" && (focusRef.current || pathRef.current)) { setFocusId(null); setPathId(null); return; }
       if (selNodes.length === 1) {
         const n = selNodes[0];
         if (!mod && k === "f") { e.preventDefault(); startFocus(n.id); return; }
+        if (!mod && k === "p") { e.preventDefault(); startPath(n.id); return; }
         if (e.key === "Tab") { e.preventDefault(); addChild(n.id); return; }
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addSibling(n.id); return; }
         if (e.key === "F2" || (e.key === "Enter" && e.shiftKey)) { e.preventDefault(); s.set(() => ({ editingId: n.id })); return; }
@@ -494,7 +566,7 @@ function Editor({ initial }: { initial: MapResponse }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [store, duplicate, ungroup, groupSelection, flush, remove, addChild, addSibling, actions, rf, createNodeAt, startFocus]);
+  }, [store, duplicate, ungroup, groupSelection, flush, remove, addChild, addSibling, actions, rf, createNodeAt, startFocus, startPath]);
 
   /* ---------------- derived render state ---------------- */
   const collapsedKey = nodes.filter((n) => n.data.collapsed).map((n) => n.id).join(",");
@@ -505,13 +577,21 @@ function Editor({ initial }: { initial: MapResponse }) {
   const parents = useMemo(() => new Set(edges.map((e) => e.source)), [edges]);
   const viewNodes = useMemo(() => nodes.map((n) => {
     const d = decorateNode(n, hidden.has(n.id), matchSet.has(n.id), counts.get(n.id) ?? 0, parents.has(n.id));
+    if (pathInfo) {
+      if (!pathInfo.ids.has(n.id)) return { ...d, className: cn(d.className, "map-dimmed") };
+      const step = pathInfo.steps.find((s) => s.id === n.id);
+      const cls = n.id === pathId ? (pathInfo.goal.state === "done" ? "map-path-goal" : pathInfo.goal.state === "blocked" ? "map-blocked" : "map-focus-root")
+        : n.id === pathInfo.next?.id ? "map-next" : step?.state === "blocked" ? "map-blocked" : "";
+      return { ...d, className: cn(d.className, cls) };
+    }
     if (!focusSet) return d;
     return { ...d, className: cn(d.className, n.id === focusId ? "map-focus-root" : focusSet.has(n.id) ? "" : "map-dimmed") };
-  }), [nodes, hidden, matchSet, counts, parents, focusSet, focusId]);
+  }), [nodes, hidden, matchSet, counts, parents, focusSet, focusId, pathInfo, pathId]);
   const viewEdges = useMemo(() => edges.map((e) => {
     const d = decorateEdge(e, hidden.has(e.source) || hidden.has(e.target), animate && nodes.length < 400);
+    if (pathInfo) return pathInfo.edges.has(e.id) ? { ...d, className: cn(d.className, "map-path"), animated: true } : { ...d, className: cn(d.className, "map-dimmed"), animated: false };
     return focusSet && !(focusSet.has(e.source) && focusSet.has(e.target)) ? { ...d, className: cn(d.className, "map-dimmed"), animated: false } : d;
-  }), [edges, hidden, animate, nodes.length, focusSet]);
+  }), [edges, hidden, animate, nodes.length, focusSet, pathInfo]);
 
   const selectedNodes = nodes.filter((n) => n.selected);
   const selectedEdges = edges.filter((e) => e.selected);
@@ -573,15 +653,32 @@ function Editor({ initial }: { initial: MapResponse }) {
             <Popover trigger={({ toggle }) => (
               <Tooltip label={tr("Add node (N, or double-click canvas)")} side="bottom"><Button data-tour="map-add" size="sm" variant="primary" onClick={toggle}><Plus className="size-4" /><span className="hidden sm:inline">{tr("Add")}</span><ChevronDown className="size-3 opacity-70" /></Button></Tooltip>
             )}>
-              {(close) => (Object.keys(KIND_META) as NodeKind[]).filter((k) => k !== "GROUP").map((k) => (
-                <MenuItem key={k} icon={<span>{KIND_META[k].icon}</span>} onClick={() => {
-                  close();
-                  const c = rf.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-                  const sel = store.getState().nodes.filter((n) => n.selected);
-                  if (sel.length === 1) { const id = addChild(sel[0].id); if (id) store.getState().updateNode(id, { kind: k }, { checkpoint: false }); }
-                  else createNodeAt({ x: c.x - 110 + Math.random() * 40, y: c.y - 24 + Math.random() * 40 }, { kind: k });
-                }}>{KIND_META[k].label}</MenuItem>
-              ))}
+              {(close) => (
+                <div className="flex max-h-[70vh] gap-1 overflow-y-auto">
+                  <div className="min-w-[170px]">
+                    <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Card")}</p>
+                    {(Object.keys(KIND_META) as NodeKind[]).filter((k) => k !== "GROUP").map((k) => (
+                      <MenuItem key={k} icon={<span>{KIND_META[k].icon}</span>} onClick={() => {
+                        close();
+                        const c = rf.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+                        const sel = store.getState().nodes.filter((n) => n.selected);
+                        if (sel.length === 1) { const id = addChild(sel[0].id); if (id) store.getState().updateNode(id, { kind: k }, { checkpoint: false }); }
+                        else createNodeAt({ x: c.x - 110 + Math.random() * 40, y: c.y - 24 + Math.random() * 40 }, { kind: k });
+                      }}>{KIND_META[k].label}</MenuItem>
+                    ))}
+                  </div>
+                  <div data-tour="map-structures" className="w-[250px] border-l border-border pl-1">
+                    <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Structure")}</p>
+                    {structures().map((s) => (
+                      <button key={s.id} onClick={() => { close(); insertStructure(s); }} className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-surface-2">
+                        <span className="text-base leading-5">{s.icon}</span>
+                        <span className="min-w-0"><span className="block text-[13px] font-medium">{s.name}</span><span className="block text-[11.5px] leading-snug text-muted">{s.hint}</span></span>
+                      </button>
+                    ))}
+                    <p className="px-2.5 pb-1.5 pt-1 text-[11px] leading-snug text-muted">{tr("Select a card first to attach the structure to it.")}</p>
+                  </div>
+                </div>
+              )}
             </Popover>
             <Popover trigger={({ toggle }) => (
               <Tooltip label={tr("Type for new connections")} side="bottom">
@@ -647,6 +744,10 @@ function Editor({ initial }: { initial: MapResponse }) {
           )}
         </div>
 
+        {pathId && pathInfo && (
+          <PathOverlay goal={nodes.find((n) => n.id === pathId)} path={pathInfo} onExit={() => setPathId(null)} onSelect={(id) => selectNode(id)} />
+        )}
+
         {focusId && focusSet && (
           <FocusOverlay
             root={nodes.find((n) => n.id === focusId)}
@@ -661,7 +762,7 @@ function Editor({ initial }: { initial: MapResponse }) {
 
         {selectedNodes.length > 1 && (
           <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-border bg-surface p-1 shadow-pop animate-pop-in">
-            <span className="px-2 text-xs font-medium text-muted">{selectedNodes.length} selected</span>
+            <span className="px-2 text-xs font-medium text-muted">{tr("{n} selected", { n: selectedNodes.length })}</span>
             <Button size="sm" variant="ghost" onClick={groupSelection}><Group className="size-3.5" />{" "}{tr("Group")}</Button>
             {selectedNodes.some((n) => n.type === "group") && <Button size="sm" variant="ghost" onClick={() => selectedNodes.filter((n) => n.type === "group").forEach((g) => ungroup(g.id))}><Ungroup className="size-3.5" />{" "}{tr("Ungroup")}</Button>}
             <Button size="sm" variant="ghost" onClick={() => duplicate(selectedNodes.map((n) => n.id))}>{tr("Duplicate")}</Button>

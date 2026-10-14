@@ -7,6 +7,7 @@ export interface MapActions {
   toggleTask: (nodeId: string) => void;
   toggleHabitToday: (nodeId: string) => void;
   focus: (nodeId: string) => void;
+  path: (nodeId: string) => void;
   toggleCollapse: (nodeId: string) => void;
   addChild: (nodeId: string) => void;
   finishEdit: (nodeId: string, title: string | null) => void;

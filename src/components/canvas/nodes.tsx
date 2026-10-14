@@ -2,7 +2,7 @@
 import { tr } from "@/lib/i18n";
 import { memo, useEffect, useRef, useState } from "react";
 import { Handle, NodeResizer, Position, useStore as useFlowStore, type NodeProps } from "@xyflow/react";
-import { ChevronRight, Crosshair, FileText, Paperclip, Plus } from "lucide-react";
+import { ChevronRight, Crosshair, FileText, Paperclip, Plus, Route } from "lucide-react";
 import { GoalLive, HabitLive, ProjectLive, TaskLive } from "./live";
 import { cn } from "@/lib/utils";
 import { useMap, useMapCtx } from "./context";
@@ -62,6 +62,7 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
   const editing = useMap((s) => s.editingId === id);
   const searching = useMap((s) => s.search.length > 0);
   const [pop, setPop] = useState(false);
+  const single = useMap((s) => { let k = 0; for (const n of s.nodes) if (n.selected && ++k > 1) return false; return k === 1; });
   const hasChildren = !!data.hasChildren;
   // Level of detail: when zoomed far out, render a lightweight node.
   const far = useFlowStore((s) => s.transform[2] < 0.4);
@@ -153,10 +154,15 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
           {data.collapsed ? `+${data.hiddenDescendants ?? ""}` : <ChevronRight className="size-3.5 rotate-180" />}
         </button>
       )}
-      {selected && !editing && (
-        <button onClick={(e) => { e.stopPropagation(); actions.focus(id); }} className="nodrag absolute -top-3 right-3 z-10 flex h-6 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[10.5px] font-semibold text-[var(--text-2)] shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)]" title={tr("Focus on this branch (F)")}>
-          <Crosshair className="size-3" />{tr("Focus")}
-        </button>
+      {selected && single && !editing && (
+        <div className="nodrag absolute -top-3 right-3 z-10 flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); actions.path(id); }} className="flex h-6 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[10.5px] font-semibold text-[var(--text-2)] shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)]" title={tr("What blocks this? Show the path to this card (P)")}>
+            <Route className="size-3" />{tr("Path")}
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); actions.focus(id); }} className="flex h-6 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[10.5px] font-semibold text-[var(--text-2)] shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)]" title={tr("Focus on this branch (F)")}>
+            <Crosshair className="size-3" />{tr("Focus")}
+          </button>
+        </div>
       )}
       {selected && !readOnly && !editing && (
         <button onClick={(e) => { e.stopPropagation(); actions.addChild(id); }} className="nodrag absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 grid size-6 place-items-center rounded-full bg-[var(--accent)] text-white shadow-md" aria-label={tr("Add connected node (Tab)")}>

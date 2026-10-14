@@ -188,3 +188,8 @@ body {
 .react-flow__node.map-dimmed:hover { opacity: .6; }
 .react-flow__node.map-focus-root > div { animation: focus-glow 2.4s ease-in-out infinite; border-color: var(--accent); }
 .reduce-motion .react-flow__node.map-focus-root > div { animation: none; box-shadow: 0 0 0 4px rgba(91,91,214,.18); }
+.react-flow__node.map-blocked > div { box-shadow: 0 0 0 3px rgba(217,119,6,.35); border-color: var(--warning); }
+.react-flow__node.map-next > div { animation: focus-glow 2.4s ease-in-out infinite; border-color: var(--accent); }
+.react-flow__node.map-path-goal > div { box-shadow: 0 0 0 4px rgba(18,161,80,.25); border-color: var(--success); }
+.react-flow__edge.map-path path.react-flow__edge-path { stroke-width: 3px; }
+.reduce-motion .react-flow__node.map-next > div { animation: none; box-shadow: 0 0 0 4px rgba(91,91,214,.2); }

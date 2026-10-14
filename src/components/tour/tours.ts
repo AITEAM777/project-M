@@ -105,6 +105,10 @@ export const TOURS: Tour[] = [
         "Cards linked to real items show their state: a goal shows a progress ring and days left, a habit shows the last 7 days and its 🔥 streak (click today's square to check in), a task can be ticked right on the map. Select a card and press “Focus” (or F) to dim everything except that branch — Esc returns the whole map.",
         "Картки, пов'язані зі справжніми елементами, показують їхній стан: ціль — кільце прогресу й дні до дедлайну, звичка — останні 7 днів і серію 🔥 (клік по сьогоднішньому квадратику — відмітити), задачу можна відмітити прямо на карті. Виділіть картку й натисніть «Фокус» (або F) — решта карти приглушиться, лишиться тільки ця гілка. Esc повертає всю карту.",
       ), { action: "deselect" }),
+      S("map-add", T("Ready-made structures & the path to a goal", "Готові структури та шлях до цілі"), T(
+        "“Add” also has structures: startup launch, SWOT, goal → milestones → tasks, pros & cons, 5 whys — a whole skeleton in one click. Select any goal card and press “Path” (or P): Nodera highlights everything that leads to it, marks blockers (e.g. an unanswered question) and shows the next step.",
+        "У «Додати» є й структури: запуск стартапу, SWOT, ціль → етапи → задачі, за і проти, 5 «чому?» — цілий каркас одним кліком. Виділіть будь-яку ціль і натисніть «Шлях» (або P): Nodera підсвітить усе, що до неї веде, позначить блокери (наприклад, питання без відповіді) і покаже наступний крок.",
+      ), { placement: "bottom" }),
       S("map-tools", T("7. Tidy up", "7. Наведіть лад"), T(
         "Undo/redo (Ctrl+Z), auto-arrange the whole map, group selected cards (Shift+drag to select several) and search inside the map.",
         "Скасувати/повторити (Ctrl+Z), автоматично впорядкувати всю карту, згрупувати виділені картки (Shift+перетягування — виділити кілька) і пошук по карті.",

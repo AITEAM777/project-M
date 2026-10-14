@@ -223,3 +223,34 @@ test("natural-language create, goal pulse, celebration and map focus", async ({ 
   await page.keyboard.press("Escape");
   await expect(page.getByText("Focus: Run a half marathon")).toBeHidden();
 });
+
+test("path to a goal shows blockers, and structures drop onto free space", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel("Name").fill("Path Tester");
+  await page.getByLabel("Email").fill(`pathx+${Date.now()}@nodera.test`);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.waitForURL("**/dashboard");
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  const { workspaces } = await (await page.request.get("/api/workspaces")).json();
+  const { map } = await (await page.request.post(`/api/maps?ws=${workspaces[0].id}`, { data: { template: "startup", locale: "en" } })).json();
+  await page.goto(`/maps/${map.id}`);
+  await page.locator(".react-flow__node").filter({ hasText: "Generating Income" }).click();
+  await page.getByRole("button", { name: "Path to goal" }).click();
+  const panel = page.getByRole("complementary", { name: "Path to goal" });
+  await expect(panel.getByText("Next step")).toBeVisible();
+  await expect(panel.getByText("No answer yet — write it in the card's description").first()).toBeVisible();
+  // Answer the question → it stops blocking.
+  await panel.getByRole("button", { name: /Which problem do I solve/ }).first().click();
+  await page.getByPlaceholder(/Your answer/).fill("People lose their ideas");
+  await expect(panel.getByText("1 of 5 steps ready")).toBeVisible();
+  await page.keyboard.press("Escape");
+  // Structure: inserted without overlapping anything.
+  const before = await page.locator(".react-flow__node").count();
+  await page.locator('[data-tour="map-add"]').click();
+  await page.getByRole("button", { name: /SWOT analysis/ }).click();
+  await expect(page.locator(".react-flow__node")).toHaveCount(before + 5);
+  const boxes = await page.locator(".react-flow__node").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ l: r.left, t: r.top, r: r.right, b: r.bottom })));
+  const overlaps = boxes.some((a, i) => boxes.some((b, j) => i < j && a.l < b.r - 2 && a.r > b.l + 2 && a.t < b.b - 2 && a.b > b.t + 2));
+  expect(overlaps).toBe(false);
+});

@@ -2,7 +2,7 @@
 import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { ArrowLeftRight, ArrowRight, Copy, ExternalLink, FileText, Link2, MoveRight, Paperclip, Trash2, Unlink, Upload, X } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Copy, Crosshair, ExternalLink, FileText, Link2, MoveRight, Paperclip, Route, Trash2, Unlink, Upload, X } from "lucide-react";
 import { api, useApi, withParams } from "@/lib/client/api";
 import { toast, useWorkspace } from "@/lib/client/store";
 import { bytes } from "@/lib/client/format";
@@ -22,6 +22,8 @@ export interface PanelActions {
   select: (nodeId: string) => void;
   flush: () => Promise<void>;
   setTaskStatus: (nodeId: string, status: string) => Promise<void>;
+  path?: (nodeId: string) => void;
+  focus?: (nodeId: string) => void;
 }
 
 function Section({ title, children, action, tour }: { title: string; children: React.ReactNode; action?: React.ReactNode; tour?: string }) {
@@ -55,6 +57,12 @@ export function NodePanel({ node, actions, onClose }: { node: MindNode; actions:
         <p className="flex-1 truncate text-sm font-semibold">{d.title || tr("Untitled")}</p>
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={tr("Close panel")}><X className="size-4" /></Button>
       </div>
+      {!isGroup && (actions.path || actions.focus) && (
+        <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+          {actions.path && <Button size="sm" variant="secondary" className="justify-center" onClick={() => actions.path!(node.id)} title={tr("What blocks this? Show the path to this card (P)")}><Route className="size-3.5" />{tr("Path to goal")}</Button>}
+          {actions.focus && <Button size="sm" variant="secondary" className="justify-center" onClick={() => actions.focus!(node.id)} title={tr("Focus on this branch (F)")}><Crosshair className="size-3.5" />{tr("Focus")}</Button>}
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-3 px-4 pb-4">
           <Field label={tr("Title")}><Textarea rows={2} className="min-h-0" value={d.title} disabled={readOnly} onFocus={cp} onChange={(e) => upd({ title: e.target.value })} /></Field>
@@ -76,7 +84,7 @@ export function NodePanel({ node, actions, onClose }: { node: MindNode; actions:
             <Field label={tr("Icon")}><Input value={d.icon} maxLength={4} placeholder={KIND_META[d.kind].icon} className="text-center" disabled={readOnly} onFocus={cp} onChange={(e) => upd({ icon: e.target.value })} /></Field>
             <Field label={tr("Color")}><div className="pt-1"><ColorPicker allowNone value={d.color} onChange={(c) => { cp(); upd({ color: c }); }} /></div></Field>
           </div>
-          {!isGroup && <Field label={tr("Description")}><Textarea rows={4} value={d.description} disabled={readOnly} onFocus={cp} onChange={(e) => upd({ description: e.target.value })} placeholder={tr("Details, reasoning, context…")} /></Field>}
+          {!isGroup && <Field label={tr("Description")}><Textarea rows={4} value={d.description} disabled={readOnly} onFocus={cp} onChange={(e) => upd({ description: e.target.value })} placeholder={d.kind === "QUESTION" ? tr("Your answer… (an answered question no longer blocks the path)") : d.kind === "DECISION" ? tr("What did you decide and why?") : tr("Details, reasoning, context…")} /></Field>}
           {!isGroup && <Field label={tr("Tags")}><TagInput value={d.tags} onChange={(tags) => { cp(); upd({ tags }); }} /></Field>}
         </div>
 
