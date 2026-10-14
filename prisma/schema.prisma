@@ -270,6 +270,8 @@ model MindMap {
   favorite    Boolean   @default(false)
   archivedAt  DateTime?
   lastOpenedAt DateTime?
+  /// Bumped on every change to the graph; saves carry the revision they started from (two-tab guard).
+  revision    Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

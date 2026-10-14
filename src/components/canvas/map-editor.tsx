@@ -11,7 +11,7 @@ import {
   type Connection, type FinalConnectionState, type OnConnectEnd, type Viewport,
 } from "@xyflow/react";
 import {
-  ArrowLeft, BoxSelect, Check, ChevronDown, CloudOff, Group, LayoutGrid, Loader2, Map as MapIcon, MoreHorizontal, Plus, Redo2, Search,
+  ArrowLeft, BoxSelect, Check, ChevronDown, CloudOff, History, TriangleAlert, Group, LayoutGrid, Loader2, Map as MapIcon, MoreHorizontal, Plus, Redo2, Search,
   Undo2, Ungroup, Waves, X,
 } from "lucide-react";
 import { api, invalidate, patch, post, put, withParams } from "@/lib/client/api";
@@ -35,14 +35,15 @@ import { PathOverlay } from "./path-view";
 import { pathToGoal } from "./path";
 import { structureCenter, structures, type Structure } from "./structures";
 import { dayKey } from "@/lib/habits";
+import { clearDraft, readDraft, sameGraph, writeDraft, type MapDraft } from "./draft";
 
 interface MapResponse {
-  map: { id: string; title: string; description: string; viewport: Viewport | null; workspaceId: string; folder: { id: string; name: string; icon: string } | null };
+  map: { id: string; title: string; description: string; viewport: Viewport | null; workspaceId: string; revision: number; folder: { id: string; name: string; icon: string } | null };
   nodes: ApiNode[];
   edges: ApiEdge[];
 }
 
-type SaveState = "saved" | "dirty" | "saving" | "error";
+type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 
 /** Saves still in flight when an editor closes; opening that map again waits for them first. */
 const pendingSaves = new Map<string, Promise<unknown>>();
@@ -51,6 +52,7 @@ export function MapEditor({ mapId }: { mapId: string }) {
   // Always load the graph fresh from the server — never from a cache — so returning to a
   // map shows exactly what was saved, and autosave can't overwrite it with an old copy.
   const [{ data, error }, setLoaded] = useState<{ data?: MapResponse; error?: Error }>({});
+  const [reloads, setReloads] = useState(0);
   useEffect(() => {
     let alive = true;
     setLoaded({});
@@ -64,12 +66,12 @@ export function MapEditor({ mapId }: { mapId: string }) {
       }
     })();
     return () => { alive = false; };
-  }, [mapId]);
+  }, [mapId, reloads]);
   if (error) return <div className="grid h-full place-items-center p-6 text-center text-sm text-muted">{tr("Could not open this map:")}{" "}{error.message}<br /><Link href="/maps" className="mt-2 text-accent">{tr("Back to maps")}</Link></div>;
   if (!data || data.map.id !== mapId) return <div className="grid h-full place-items-center"><Spinner className="size-7" /></div>;
   return (
     <ReactFlowProvider>
-      <Editor key={mapId} initial={data} />
+      <Editor key={`${mapId}:${reloads}`} initial={data} onReload={() => setReloads((n) => n + 1)} />
     </ReactFlowProvider>
   );
 }
@@ -87,7 +89,7 @@ function newNode(id: string, position: { x: number; y: number }, kind: NodeKind 
   };
 }
 
-function Editor({ initial }: { initial: MapResponse }) {
+function Editor({ initial, onReload }: { initial: MapResponse; onReload: () => void }) {
   const mapId = initial.map.id;
   const router = useRouter();
   const params = useSearchParams();
@@ -119,21 +121,54 @@ function Editor({ initial }: { initial: MapResponse }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirty = useRef(false);
   const retry = useRef(0);
+  /** Server revision this editor's copy is based on (see the graph PUT route). */
+  const revision = useRef(initial.map.revision ?? 0);
+  /** Set when another window saved first: autosave pauses until the user picks a side. */
+  const blocked = useRef(false);
+  const closed = useRef(false);
+  const [conflict, setConflict] = useState<{ revision: number } | null>(null);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveDraft = useCallback(() => {
+    if (draftTimer.current) { clearTimeout(draftTimer.current); draftTimer.current = null; }
+    const { nodes, edges } = store.getState();
+    writeDraft(mapId, revision.current, nodes, edges);
+  }, [mapId, store]);
+  // Unsaved edits left behind last time (closed tab, crash, failed save) — offered back once.
+  const [draft, setDraft] = useState<MapDraft | null>(() => {
+    const d = readDraft(mapId);
+    if (!d) return null;
+    const s = store.getState();
+    if (sameGraph(d, s.nodes, s.edges)) { clearDraft(mapId); return null; }
+    return d;
+  });
 
   const saveNow = useCallback(async (): Promise<void> => {
     if (saving.current) { await saving.current; if (!dirty.current) return; }
-    if (!dirty.current) return;
+    if (!dirty.current || blocked.current) return;
     dirty.current = false;
     const { nodes, edges } = store.getState();
     setSaveState("saving");
-    const p = put(`/api/maps/${mapId}/graph`, { nodes: toNodeInputs(nodes), edges: toEdgeInputs(edges) })
-      .then(() => {
+    const p = put<{ revision: number }>(`/api/maps/${mapId}/graph`, { nodes: toNodeInputs(nodes), edges: toEdgeInputs(edges), baseRevision: revision.current })
+      .then((r) => {
         retry.current = 0;
+        revision.current = r.revision;
+        if (!dirty.current) {
+          if (draftTimer.current) { clearTimeout(draftTimer.current); draftTimer.current = null; }
+          clearDraft(mapId);
+        }
         setSaveState(dirty.current ? "dirty" : "saved");
       })
-      .catch((e: { status?: number; message?: string }) => {
+      .catch((e: { status?: number; message?: string; details?: { conflict?: boolean; revision?: number } }) => {
         dirty.current = true;
+        if (e.status === 409 && e.details?.conflict) {
+          blocked.current = true;
+          saveDraft();
+          setSaveState("conflict");
+          setConflict({ revision: e.details.revision ?? revision.current });
+          return;
+        }
         setSaveState("error");
+        if (closed.current) return;
         if (e.status && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429) {
           toast.error(e);
         } else {
@@ -144,7 +179,7 @@ function Editor({ initial }: { initial: MapResponse }) {
       .finally(() => { saving.current = null; });
     saving.current = p;
     await p;
-  }, [mapId, store]);
+  }, [mapId, store, saveDraft]);
 
   const flush = useCallback(async () => {
     if (timer.current) clearTimeout(timer.current);
@@ -152,28 +187,39 @@ function Editor({ initial }: { initial: MapResponse }) {
   }, [saveNow]);
 
   useEffect(() => {
+    closed.current = false;
     const unsub = store.subscribe((s, prev) => {
       if (s.version === prev.version) return;
       dirty.current = true;
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+      draftTimer.current = setTimeout(saveDraft, 300);
+      if (blocked.current) return;
       setSaveState("dirty");
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => void saveNow(), 700);
     });
-    const beforeUnload = (e: BeforeUnloadEvent) => { if (dirty.current) { e.preventDefault(); } };
+    const beforeUnload = (e: BeforeUnloadEvent) => { if (dirty.current) { saveDraft(); e.preventDefault(); } };
     window.addEventListener("beforeunload", beforeUnload);
     return () => {
       unsub();
+      closed.current = true;
       window.removeEventListener("beforeunload", beforeUnload);
       if (timer.current) clearTimeout(timer.current);
+      if (dirty.current) saveDraft();
+      else if (draftTimer.current) clearTimeout(draftTimer.current);
       const inFlight = saving.current;
       let last: Promise<unknown> | null = inFlight;
-      if (dirty.current) {
-        const { nodes, edges } = store.getState();
-        const body = JSON.stringify({ nodes: toNodeInputs(nodes), edges: toEdgeInputs(edges) });
-        // Flush when navigating away inside the app — after any save already on its way,
-        // so an older snapshot can never land after the newest one.
-        last = (inFlight ?? Promise.resolve()).catch(() => {}).then(() =>
-          fetch(withParams(`/api/maps/${mapId}/graph`, useWorkspace.getState().id), { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json" }, body }));
+      if (dirty.current || inFlight) {
+        // Flush when navigating away inside the app — after any save already on its way, so an
+        // older snapshot can never land after the newest one (and its revision is the right base).
+        // If this fails or hits a conflict, the draft stays and is offered back on the next visit.
+        last = (inFlight ?? Promise.resolve()).catch(() => {}).then(async () => {
+          if (!dirty.current || blocked.current) return;
+          const { nodes, edges } = store.getState();
+          const body = JSON.stringify({ nodes: toNodeInputs(nodes), edges: toEdgeInputs(edges), baseRevision: revision.current });
+          const res = await fetch(withParams(`/api/maps/${mapId}/graph`, useWorkspace.getState().id), { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json" }, body });
+          if (res.ok) clearDraft(mapId);
+        });
       }
       if (last) {
         const tracked: Promise<unknown> = last.catch(() => {}).finally(() => { if (pendingSaves.get(mapId) === tracked) pendingSaves.delete(mapId); });
@@ -181,7 +227,32 @@ function Editor({ initial }: { initial: MapResponse }) {
       }
       invalidate("/api/maps", "/api/dashboard");
     };
-  }, [store, saveNow, mapId]);
+  }, [store, saveNow, saveDraft, mapId]);
+
+  /** Conflict: drop this window's edits and load what the other window saved. */
+  const loadLatest = useCallback(() => {
+    clearDraft(mapId);
+    dirty.current = false;
+    onReload();
+  }, [mapId, onReload]);
+  /** Conflict: keep this window's version and save it over the other one. */
+  const keepMine = useCallback(() => {
+    revision.current = conflict?.revision ?? revision.current;
+    blocked.current = false;
+    setConflict(null);
+    dirty.current = true;
+    void saveNow();
+  }, [conflict, saveNow]);
+  const restoreDraft = useCallback(() => {
+    if (!draft) return;
+    store.getState().commit(() => ({ nodes: sortParentsFirst(draft.nodes.map((n) => ({ ...n, selected: false }))), edges: draft.edges }));
+    setDraft(null);
+    toast.success(tr("Unsaved changes restored"), { label: tr("Undo"), run: () => store.getState().undo() });
+  }, [draft, store]);
+  const discardDraft = useCallback(() => {
+    setDraft(null);
+    if (!dirty.current) clearDraft(mapId);
+  }, [mapId]);
 
   const vpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
@@ -779,6 +850,33 @@ function Editor({ initial }: { initial: MapResponse }) {
           )}
         </div>
 
+        {(conflict || draft) && (
+          <div className="pointer-events-none absolute inset-x-0 top-16 z-30 flex justify-center px-3">
+            {conflict ? (
+              <div role="alert" data-testid="map-conflict" className="pointer-events-auto flex max-w-xl flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-warning/40 bg-surface p-3 text-sm shadow-pop animate-pop-in">
+                <TriangleAlert className="size-4 shrink-0 text-warning" />
+                <p className="min-w-0 flex-1"><b>{tr("This map was changed in another window.")}</b>{" "}{tr("Your changes here are paused so nothing gets overwritten.")}</p>
+                <div className="flex gap-1.5">
+                  <Button size="sm" variant="primary" onClick={loadLatest}>{tr("Load the latest version")}</Button>
+                  <Button size="sm" variant="ghost" onClick={keepMine}>{tr("Keep my changes")}</Button>
+                </div>
+              </div>
+            ) : draft && (
+              <div role="status" data-testid="map-draft" className="pointer-events-auto flex max-w-xl flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-surface p-3 text-sm shadow-pop animate-pop-in">
+                <History className="size-4 shrink-0 text-accent" />
+                <p className="min-w-0 flex-1">
+                  <b>{tr("Unsaved changes found")}</b>{" "}{tr("from {time} on this device.", { time: new Date(draft.at).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) })}
+                  {draft.base < (initial.map.revision ?? 0) && <span className="block text-xs text-muted">{tr("The map was saved since then — restoring replaces that version (you can undo).")}</span>}
+                </p>
+                <div className="flex gap-1.5">
+                  <Button size="sm" variant="primary" onClick={restoreDraft}>{tr("Restore")}</Button>
+                  <Button size="sm" variant="ghost" onClick={discardDraft}>{tr("Discard")}</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {pathId && pathInfo && (
           <PathOverlay goal={nodes.find((n) => n.id === pathId)} path={pathInfo} onExit={() => setPathId(null)} onSelect={(id) => selectNode(id)} />
         )}
@@ -830,6 +928,7 @@ function Editor({ initial }: { initial: MapResponse }) {
 }
 
 function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
+  if (state === "conflict") return <span className="flex items-center gap-1 px-1.5 text-xs text-warning"><TriangleAlert className="size-3.5" />{" "}{tr("Paused")}</span>;
   if (state === "error") return <button onClick={onRetry} className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-danger hover:bg-danger-soft" title={tr("Retry saving")}><CloudOff className="size-3.5" />{" "}{tr("Not saved")}</button>;
   if (state === "saving" || state === "dirty") return <span className="flex items-center gap-1 px-1.5 text-xs text-muted"><Loader2 className="size-3 animate-spin" />{" "}{tr("Saving")}</span>;
   return <span className="flex items-center gap-1 px-1.5 text-xs text-muted"><Check className="size-3.5 text-success" />{" "}{tr("Saved")}</span>;

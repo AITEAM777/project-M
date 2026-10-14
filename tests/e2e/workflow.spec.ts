@@ -442,3 +442,74 @@ test("map cards survive leaving the map and coming back", async ({ page }) => {
   await page.reload();
   await expect(page.locator(".react-flow__node", { hasText: "Quick card" })).toBeVisible();
 });
+
+async function newMap(page: Page, title: string) {
+  await page.goto("/maps");
+  await page.getByRole("button", { name: "New map" }).click();
+  await page.getByLabel("Title").fill(title);
+  await page.getByRole("button", { name: "Create map" }).click();
+  await page.waitForURL("**/maps/**");
+  await page.locator(".react-flow__node").first().waitFor();
+  return page.url();
+}
+
+async function addCard(page: Page, title: string, x: number, y: number) {
+  await page.locator(".react-flow__pane").dblclick({ position: { x, y } });
+  await expect(page.getByLabel("Node title")).toBeFocused();
+  await page.keyboard.type(title);
+  await page.keyboard.press("Enter");
+}
+
+test("two windows on one map never silently overwrite each other", async ({ page, context }) => {
+  await signUp(page, "Two Tabs", `twotabs+${Date.now()}@nodera.test`);
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  const url = await newMap(page, "Shared map");
+  const other = await context.newPage();
+  await other.goto(url);
+  await other.locator(".react-flow__node").first().waitFor();
+
+  await addCard(page, "From window A", 300, 600);
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+
+  // Window B still has the old copy: its save is refused instead of wiping A's card.
+  await addCard(other, "From window B", 700, 650);
+  await expect(other.getByTestId("map-conflict")).toBeVisible();
+  await other.getByRole("button", { name: "Load the latest version" }).click();
+  await expect(other.locator(".react-flow__node", { hasText: "From window A" })).toBeVisible();
+  await expect(other.locator(".react-flow__node", { hasText: "From window B" })).toHaveCount(0);
+
+  // Now B is up to date and saves normally; A gets the warning and chooses to keep its version.
+  await addCard(other, "B again", 700, 500);
+  await expect(other.getByText("Saved", { exact: true })).toBeVisible();
+  await addCard(page, "A again", 300, 450);
+  await expect(page.getByTestId("map-conflict")).toBeVisible();
+  await page.getByRole("button", { name: "Keep my changes" }).click();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".react-flow__node", { hasText: "A again" })).toBeVisible();
+  await expect(page.getByTestId("map-draft")).toHaveCount(0);
+});
+
+test("edits that could not be saved are kept on the device and can be restored", async ({ page }) => {
+  await signUp(page, "Offline", `offline+${Date.now()}@nodera.test`);
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  const url = await newMap(page, "Offline map");
+
+  // The network drops: autosave and the closing flush both fail.
+  await page.route("**/graph**", (r) => r.abort());
+  await addCard(page, "Offline card", 300, 600);
+  await expect(page.getByText("Not saved")).toBeVisible();
+  await page.getByRole("link", { name: "Dashboard" }).first().click();
+  await page.waitForURL("**/dashboard");
+
+  await page.goto(url);
+  await expect(page.getByTestId("map-draft")).toBeVisible();
+  await expect(page.locator(".react-flow__node", { hasText: "Offline card" })).toHaveCount(0);
+  await page.unroute("**/graph**");
+  await page.getByRole("button", { name: "Restore", exact: true }).click();
+  await expect(page.locator(".react-flow__node", { hasText: "Offline card" })).toBeVisible();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".react-flow__node", { hasText: "Offline card" })).toBeVisible();
+  await expect(page.getByTestId("map-draft")).toHaveCount(0);
+});

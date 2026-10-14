@@ -26,7 +26,7 @@ export const POST = route(async (req, { params }) => {
   const kind = b.type === "note" && "kind" in ent && ent.kind === "THOUGHT" ? "THOUGHT" : KIND[b.type];
   await prisma.$transaction([
     prisma.mapNode.create({ data: { id, mapId: map.id, kind, title: ent.title, x: (bounds._max.x ?? -300) + 300, y: bounds._min.y ?? 0, [`${b.type}Id`]: b.id } }),
-    prisma.mindMap.update({ where: { id: map.id }, data: { updatedAt: new Date() } }),
+    prisma.mindMap.update({ where: { id: map.id }, data: { updatedAt: new Date(), revision: { increment: 1 } } }),
   ]);
   return { nodeId: id, existed: false };
 });

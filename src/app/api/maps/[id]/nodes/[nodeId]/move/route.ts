@@ -16,7 +16,7 @@ export const POST = route(async (req, { params }) => {
     prisma.mapEdge.deleteMany({ where: { OR: [{ sourceId: node.id }, { targetId: node.id }] } }),
     prisma.mapNode.updateMany({ where: { parentId: node.id, mapId: map.id }, data: { parentId: null } }),
     prisma.mapNode.update({ where: { id: node.id }, data: { mapId: target.id, parentId: null, x: (maxX._max.x ?? 0) + 320, y: 0 } }),
-    prisma.mindMap.update({ where: { id: target.id }, data: { updatedAt: new Date() } }),
+    prisma.mindMap.update({ where: { id: target.id }, data: { updatedAt: new Date(), revision: { increment: 1 } } }),
   ]);
   return { ok: true };
 });

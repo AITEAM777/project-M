@@ -109,6 +109,8 @@ export const graphSave = z.object({
   nodes: z.array(nodeSchema).max(10_000),
   edges: z.array(edgeSchema).max(30_000),
   viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number() }).optional(),
+  /** The map revision this snapshot was edited from; a mismatch means another window saved first. */
+  baseRevision: z.number().int().min(0).optional(),
 });
 
 export const nodeConvert = z.object({

@@ -149,6 +149,7 @@ async function applyConnections(ws: string, payload: ConnectionsSuggestion, opts
       await tx.mapEdge.create({ data: { id: uid("e_"), mapId: map.id, sourceId: a, targetId: b, relation: c.relation, description: c.reason.slice(0, 2000), label: "" } });
       added++;
     }
+    if (existing.length) await tx.mindMap.update({ where: { id: map.id }, data: { revision: { increment: 1 } } });
     return { mapId: map.id, added };
   });
 }
