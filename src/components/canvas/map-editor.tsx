@@ -1,5 +1,7 @@
 "use client";
 import { tp, tr } from "@/lib/i18n";
+import { useProTools } from "@/lib/client/billing";
+import { ProBadge } from "@/components/billing/pro-badge";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,7 +15,7 @@ import {
   Undo2, Ungroup, Waves, X,
 } from "lucide-react";
 import { api, invalidate, patch, post, put, useApi } from "@/lib/client/api";
-import { confirm, toast } from "@/lib/client/store";
+import { confirm, toast, useUpgrade } from "@/lib/client/store";
 import { reportGoals, type GoalDelta } from "@/lib/client/celebrate";
 import { useMe, useMediaQuery } from "@/lib/client/hooks";
 import { cn, uid } from "@/lib/utils";
@@ -341,13 +343,18 @@ function Editor({ initial }: { initial: MapResponse }) {
     setFocusId(id);
     setPanelOpen(false);
   }, []);
+  const proTools = useProTools();
+  const proRef = useRef(proTools);
+  proRef.current = proTools;
   const startPath = useCallback((id: string) => {
+    if (!proRef.current) { useUpgrade.getState().open("path"); return; }
     setFocusId(null);
     setPathId(id);
     setPanelOpen(false);
   }, []);
 
   const actions: MapActions = useMemo(() => ({
+    proTools,
     toggleHabitToday: (id) => void toggleHabitToday(id),
     focus: startFocus,
     path: startPath,
@@ -367,7 +374,7 @@ function Editor({ initial }: { initial: MapResponse }) {
       s.set(() => ({ editingId: null }));
       wrapper.current?.focus();
     },
-  }), [store, addChild, setTaskStatus, toggleHabitToday, startFocus, startPath]);
+  }), [store, addChild, setTaskStatus, toggleHabitToday, startFocus, startPath, proTools]);
 
   const panelActions: PanelActions = useMemo(() => ({
     convert: async (nodeId, to, extra) => {
@@ -668,9 +675,9 @@ function Editor({ initial }: { initial: MapResponse }) {
                     ))}
                   </div>
                   <div data-tour="map-structures" className="w-[250px] border-l border-border pl-1">
-                    <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Structure")}</p>
+                    <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">{tr("Structure")}{!proTools && <ProBadge />}</p>
                     {structures().map((s) => (
-                      <button key={s.id} onClick={() => { close(); insertStructure(s); }} className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-surface-2">
+                      <button key={s.id} onClick={() => { close(); if (proTools) insertStructure(s); else useUpgrade.getState().open("structures"); }} className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-surface-2">
                         <span className="text-base leading-5">{s.icon}</span>
                         <span className="min-w-0"><span className="block text-[13px] font-medium">{s.name}</span><span className="block text-[11.5px] leading-snug text-muted">{s.hint}</span></span>
                       </button>

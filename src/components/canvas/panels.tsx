@@ -1,5 +1,7 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { useProTools } from "@/lib/client/billing";
+import { ProBadge } from "@/components/billing/pro-badge";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowLeftRight, ArrowRight, Copy, Crosshair, ExternalLink, FileText, Link2, MoveRight, Paperclip, Route, Trash2, Unlink, Upload, X } from "lucide-react";
@@ -40,6 +42,7 @@ function Section({ title, children, action, tour }: { title: string; children: R
 
 export function NodePanel({ node, actions, onClose }: { node: MindNode; actions: PanelActions; onClose: () => void }) {
   const { store, readOnly } = useMapCtx();
+  const proTools = useProTools();
   const edges = useMap((s) => s.edges);
   const nodes = useMap((s) => s.nodes);
   const d = node.data;
@@ -59,7 +62,7 @@ export function NodePanel({ node, actions, onClose }: { node: MindNode; actions:
       </div>
       {!isGroup && (actions.path || actions.focus) && (
         <div className="grid grid-cols-2 gap-2 px-4 pb-3">
-          {actions.path && <Button size="sm" variant="secondary" className="justify-center" onClick={() => actions.path!(node.id)} title={tr("What blocks this? Show the path to this card (P)")}><Route className="size-3.5" />{tr("Path to goal")}</Button>}
+          {actions.path && <Button size="sm" variant="secondary" className="justify-center" onClick={() => actions.path!(node.id)} title={tr("What blocks this? Show the path to this card (P)")}><Route className="size-3.5" />{tr("Path to goal")}{!proTools && <ProBadge />}</Button>}
           {actions.focus && <Button size="sm" variant="secondary" className="justify-center" onClick={() => actions.focus!(node.id)} title={tr("Focus on this branch (F)")}><Crosshair className="size-3.5" />{tr("Focus")}</Button>}
         </div>
       )}

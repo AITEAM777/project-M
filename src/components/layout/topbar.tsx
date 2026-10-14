@@ -1,8 +1,9 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { planName, useBilling } from "@/lib/client/billing";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarPlus, CheckSquare, FilePlus2, FolderPlus, Goal, Lightbulb, LogOut, Menu, Moon, Plus, Repeat, Search, Settings, Sun, Workflow, Zap } from "lucide-react";
+import { Bell, CalendarPlus, CreditCard, CheckSquare, FilePlus2, FolderPlus, Goal, Lightbulb, LogOut, Menu, Moon, Plus, Repeat, Search, Settings, Sun, Workflow, Zap } from "lucide-react";
 import { api, patch, useApi } from "@/lib/client/api";
 import { useUI } from "@/lib/client/store";
 import { applyTheme } from "@/lib/client/hooks";
@@ -62,6 +63,7 @@ export function Topbar({ user }: { user: ShellUser }) {
           );
         }}
       </Popover>
+      <ProButton />
       <Popover align="end" className="w-80" onOpenChange={(o) => { if (!o && notes?.unread) patch("/api/reminders", {}).then(() => mutate()); }}
         trigger={({ toggle }) => (
           <Button variant="ghost" size="icon" onClick={toggle} aria-label={notes?.unread ? tr("Notifications ({n} unread)", { n: notes.unread }) : tr("Notifications")} className="relative">
@@ -95,6 +97,7 @@ export function Topbar({ user }: { user: ShellUser }) {
             <div className="px-2.5 pb-2"><LanguageSwitcher className="w-full [&>button]:flex-1 [&>button]:justify-center" /></div>
             <MenuSeparator />
             <MenuItem icon={<><Moon className="dark:hidden" /><Sun className="hidden dark:block" /></>} onClick={() => { close(); toggleTheme(); }}><span className="dark:hidden">{tr("Dark mode")}</span><span className="hidden dark:inline">{tr("Light mode")}</span></MenuItem>
+            <MenuItem icon={<CreditCard />} onClick={() => { close(); router.push("/billing"); }}><span className="flex flex-1 items-center justify-between gap-3">{tr("Plan & billing")}<PlanTag /></span></MenuItem>
             <MenuItem icon={<Settings />} onClick={() => { close(); router.push("/settings"); }}>{tr("Settings")}</MenuItem>
             <MenuSeparator />
             <MenuItem icon={<LogOut />} onClick={logout}>{tr("Sign out")}</MenuItem>
@@ -103,4 +106,21 @@ export function Topbar({ user }: { user: ShellUser }) {
       </Popover>
     </header>
   );
+}
+
+/** "⚡ Pro" next to the avatar — only while on the free plan. */
+function ProButton() {
+  const { data } = useBilling();
+  if (!data || data.plan !== "FREE") return null;
+  return (
+    <Link href="/billing" data-tour="pro-button" className="hidden h-8 items-center gap-1 rounded-lg bg-gradient-to-br from-[#6E5BF0] to-[#4338CA] px-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(67,56,202,.6)] hover:brightness-110 sm:inline-flex">
+      <Zap className="size-3.5" />Pro
+    </Link>
+  );
+}
+
+function PlanTag() {
+  const { data } = useBilling();
+  if (!data) return null;
+  return <span className="rounded-full bg-accent-soft px-1.5 py-px text-[11px] font-semibold text-accent">{planName(data.plan)}</span>;
 }

@@ -43,7 +43,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
               <ul className="divide-y divide-[var(--border)] text-[14px]">
                 {user.subscriptions.map((s) => (
                   <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                    <span><PlanBadge plan={s.plan} /> <span className="ml-1 text-[var(--muted)]">{s.period === "manual" ? "вручну" : s.period === "year" ? "рік" : "місяць"} · {s.provider}</span>{s.note && <span className="block text-[12.5px] text-[var(--muted)]">«{s.note}»</span>}</span>
+                    <span><PlanBadge plan={s.plan} /> <span className="ml-1 text-[var(--muted)]">{s.period === "manual" ? "вручну" : s.period === "trial" ? "пробний" : s.period === "year" ? "рік" : "місяць"} · {s.provider === "test" ? "тест" : s.provider}</span>{s.note && <span className="block text-[12.5px] text-[var(--muted)]">«{s.note}»</span>}</span>
                     <span className="flex items-center gap-2"><Badge className={STATUS[s.status][1]}>{STATUS[s.status][0]}</Badge><span className="tabular-nums text-[var(--muted)]">до {fmtDate(s.currentPeriodEnd)}</span></span>
                   </li>
                 ))}

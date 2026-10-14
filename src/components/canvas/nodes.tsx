@@ -1,5 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { ProBadge } from "@/components/billing/pro-badge";
 import { memo, useEffect, useRef, useState } from "react";
 import { Handle, NodeResizer, Position, useStore as useFlowStore, type NodeProps } from "@xyflow/react";
 import { ChevronRight, Crosshair, FileText, Paperclip, Plus, Route } from "lucide-react";
@@ -157,7 +158,7 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
       {selected && single && !editing && (
         <div className="nodrag absolute -top-3 right-3 z-10 flex gap-1">
           <button onClick={(e) => { e.stopPropagation(); actions.path(id); }} className="flex h-6 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[10.5px] font-semibold text-[var(--text-2)] shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)]" title={tr("What blocks this? Show the path to this card (P)")}>
-            <Route className="size-3" />{tr("Path")}
+            <Route className="size-3" />{tr("Path")}{!actions.proTools && <ProBadge />}
           </button>
           <button onClick={(e) => { e.stopPropagation(); actions.focus(id); }} className="flex h-6 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[10.5px] font-semibold text-[var(--text-2)] shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)]" title={tr("Focus on this branch (F)")}>
             <Crosshair className="size-3" />{tr("Focus")}

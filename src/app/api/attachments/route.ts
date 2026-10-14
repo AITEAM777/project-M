@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { HttpError, notFound, requireMember, requireUser, route } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
+import { limitError } from "@/server/quota";
 import { removeStored, saveFile } from "@/server/storage";
 
 /** Multipart upload: fields `file`, `ws`, and one of `noteId` / `nodeId`. */
@@ -16,7 +17,8 @@ export const POST = route(async (req) => {
   if (noteId && !(await prisma.note.findFirst({ where: { id: noteId, workspaceId: ws }, select: { id: true } }))) throw notFound("Note");
   if (nodeId && !(await prisma.mapNode.findFirst({ where: { id: nodeId, map: { workspaceId: ws } }, select: { id: true } }))) throw notFound("Node (save the map first)");
   const used = await prisma.attachment.aggregate({ where: { workspace: { ownerId: user.id } }, _sum: { size: true } });
-  if ((used._sum.size ?? 0) + file.size > limitsFor(user.plan).storageBytes) throw new HttpError(402, "Storage limit reached for your plan");
+  const max = limitsFor(user.plan).storageBytes;
+  if ((used._sum.size ?? 0) + file.size > max) throw limitError("storage", max, "Storage limit reached for your plan");
   const key = await saveFile(file);
   try {
     const attachment = await prisma.attachment.create({

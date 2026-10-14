@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { assertSameWorkspace, logActivity, parseBody, route, userAndWorkspace } from "@/lib/http";
 import { goalCreate } from "@/lib/validation";
+import { assertQuota } from "@/server/quota";
 import { goalInclude, listGoals, serializeGoal } from "@/server/goals";
 
 export const GET = route(async (req) => {
@@ -13,6 +14,7 @@ export const GET = route(async (req) => {
 export const POST = route(async (req) => {
   const { user, workspaceId } = await userAndWorkspace(req, "EDITOR");
   const { milestones, ...body } = await parseBody(req, goalCreate);
+  await assertQuota("goals", workspaceId, user.plan);
   await assertSameWorkspace(workspaceId, { folderId: body.folderId });
   const goal = await prisma.goal.create({
     data: {

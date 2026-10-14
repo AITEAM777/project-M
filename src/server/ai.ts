@@ -5,6 +5,7 @@ import type * as z4 from "zod/v4";
 import { prisma } from "@/lib/db";
 import { HttpError } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
+import { limitError } from "./quota";
 import { logger } from "@/lib/logger";
 
 /** AI is optional: without ANTHROPIC_API_KEY every AI endpoint returns 503 and the UI hides AI. */
@@ -35,7 +36,8 @@ export async function assertAiAllowed(user: { id: string; plan: string; aiEnable
   if (!user.aiEnabled) throw new HttpError(403, "AI features are turned off in your settings");
   const since = new Date(Date.now() - 86400_000);
   const used = await prisma.aiSuggestion.count({ where: { userId: user.id, createdAt: { gte: since } } });
-  if (used >= limitsFor(user.plan).aiRequestsPerDay) throw new HttpError(429, "Daily AI limit reached for your plan");
+  const max = limitsFor(user.plan).aiRequestsPerDay;
+  if (used >= max) throw limitError("ai", max, "Daily AI limit reached for your plan");
 }
 
 /** Single structured call. The response is validated against the Zod schema. */

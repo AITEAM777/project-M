@@ -74,6 +74,7 @@ test("complete MVP workflow", async ({ page }) => {
   await page.locator(".react-flow__node").first().waitFor();
   const pane = page.locator(".react-flow__pane");
   await pane.dblclick({ position: { x: 300, y: 650 } });
+  await expect(page.getByLabel("Node title")).toBeFocused();
   await page.keyboard.type("Run 3x per week");
   await page.keyboard.press("Enter");
   await expect(page.locator(".react-flow__node", { hasText: "Run 3x per week" })).toBeVisible();
@@ -231,6 +232,8 @@ test("natural-language create, goal pulse, celebration and map focus", async ({ 
 test("path to a goal shows blockers, and structures drop onto free space", async ({ page }) => {
   await signUp(page, "Path Tester", `pathx+${Date.now()}@nodera.test`);
   await page.getByRole("button", { name: "Skip", exact: true }).click();
+  // Path to goal and structures are Pro tools: start the free trial (test mode, no payment).
+  expect((await page.request.post("/api/billing/checkout", { data: { plan: "PRO", trial: true } })).ok()).toBeTruthy();
   const { workspaces } = await (await page.request.get("/api/workspaces")).json();
   const { map } = await (await page.request.post(`/api/maps?ws=${workspaces[0].id}`, { data: { template: "startup", locale: "en" } })).json();
   await page.goto(`/maps/${map.id}`);
@@ -344,4 +347,54 @@ test("admin panel lives only on its own subdomain, behind password + email code"
   expect(me.user.email).toBe(customer);
   const { user } = await (await api.get("/api/me")).json();
   expect(user.plan).toBe("PRO");
+});
+
+test("plans: limits open the upgrade dialog, trial and Max switch on in test mode", async ({ page }) => {
+  await signUp(page, "Plan Tester", `plan+${Date.now()}@nodera.test`);
+  await page.getByRole("button", { name: "Skip", exact: true }).click();
+  const { workspaces } = await (await page.request.get("/api/workspaces")).json();
+  const ws = workspaces[0].id as string;
+
+  // The sidebar shows the free plan; the starter workspace has no goals yet.
+  await expect(page.getByText("Start plan")).toBeVisible();
+  for (const t of ["One", "Two", "Three"]) expect((await page.request.post(`/api/goals?ws=${ws}`, { data: { title: t } })).ok()).toBeTruthy();
+  const fourth = await page.request.post(`/api/goals?ws=${ws}`, { data: { title: "Four" } });
+  expect(fourth.status()).toBe(402);
+  expect((await fourth.json()).details).toMatchObject({ limit: "goals", max: 3 });
+
+  // Creating the 4th goal in the UI opens the upgrade dialog instead of an error.
+  await page.goto("/goals");
+  await page.getByRole("button", { name: /New goal/ }).first().click();
+  await page.getByLabel("Goal", { exact: true }).fill("Four");
+  await page.getByRole("button", { name: "Create goal" }).click();
+  await expect(page.getByRole("heading", { name: "Another goal — great pace!" })).toBeVisible();
+  await page.getByRole("button", { name: "Try Pro free for 14 days" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome to Pro!" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  // The goal form is still open: the same click now works.
+  await page.getByRole("button", { name: "Create goal" }).click();
+  await page.waitForURL(/\/goals\/[^/]+$/);
+
+  // The billing page shows the trial; cancelling keeps Pro until the end of the period.
+  await page.goto("/billing");
+  await expect(page.getByText(/Free trial · \d+ days left/).first()).toBeVisible();
+  await page.getByRole("button", { name: "Cancel subscription" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel subscription" }).click();
+  await expect(page.getByRole("button", { name: "Resume subscription" })).toBeVisible();
+  let me = await (await page.request.get("/api/billing?ws=" + ws)).json();
+  expect(me.plan).toBe("PRO");
+  expect(me.trialAvailable).toBe(false);
+
+  // Max switches on at once; then reset back to Start for another round of testing.
+  await page.getByRole("button", { name: "Choose Max" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome to Max!" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  me = await (await page.request.get("/api/billing?ws=" + ws)).json();
+  expect(me.plan).toBe("MAX");
+  expect(me.limits.aiRequestsPerDay).toBe(1000);
+  await page.getByRole("button", { name: "Reset to Start (test)" }).click();
+  await expect(page.getByRole("button", { name: "Try 14 days free" })).toBeVisible();
+  me = await (await page.request.get("/api/billing?ws=" + ws)).json();
+  expect(me.plan).toBe("FREE");
+  expect(me.trialAvailable).toBe(true);
 });

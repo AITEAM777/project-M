@@ -21,7 +21,11 @@ export const useToasts = create<{ toasts: Toast[]; push: (t: Omit<Toast, "id">) 
 export const toast = {
   info: (message: string, action?: Toast["action"]) => useToasts.getState().push({ message: tr(message), kind: "info", action: action && { ...action, label: tr(action.label) } }),
   success: (message: string, action?: Toast["action"]) => useToasts.getState().push({ message: tr(message), kind: "success", action: action && { ...action, label: tr(action.label) } }),
-  error: (e: unknown) => useToasts.getState().push({ message: tr(e instanceof Error ? e.message : String(e)), kind: "error" }),
+  error: (e: unknown) => {
+    // Plan limits already opened the upgrade dialog; don't repeat them as an error.
+    if ((e as { handled?: boolean } | null)?.handled) return;
+    useToasts.getState().push({ message: tr(e instanceof Error ? e.message : String(e)), kind: "error" });
+  },
 };
 
 type ConfirmReq = { title: string; body?: string; confirmLabel?: string; danger?: boolean; resolve: (ok: boolean) => void };
@@ -62,4 +66,22 @@ export const useUI = create<{
   setCapture: (v) => set({ captureOpen: v }),
   setPalette: (v) => set({ paletteOpen: v }),
   setSidebar: (v) => set({ sidebarOpen: v }),
+}));
+
+/** Why the upgrade dialog opened: a plan limit (goals, maps, …) or a Pro tool (path, structures, history). */
+export type UpgradeReason = "goals" | "maps" | "habits" | "projects" | "nodes" | "workspaces" | "storage" | "ai" | "path" | "structures" | "history" | "generic";
+export const useUpgrade = create<{
+  reason: UpgradeReason | null;
+  max: number | null;
+  welcome: { plan: string; trial: boolean } | null;
+  open: (reason: UpgradeReason, max?: number | null) => void;
+  close: () => void;
+  setWelcome: (w: { plan: string; trial: boolean } | null) => void;
+}>((set) => ({
+  reason: null,
+  max: null,
+  welcome: null,
+  open: (reason, max = null) => set({ reason, max }),
+  close: () => set({ reason: null, max: null }),
+  setWelcome: (welcome) => set({ welcome, reason: null }),
 }));

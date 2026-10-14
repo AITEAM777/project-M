@@ -1,5 +1,6 @@
 "use client";
 import { tr, translated } from "@/lib/i18n";
+import { SidebarPlan } from "@/components/billing/plan-widgets";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -57,6 +58,7 @@ export function Sidebar({ workspaces, onWorkspacesChange, className }: { workspa
         )}
       </nav>
       <Folders />
+      <SidebarPlan />
       <div className="border-t border-border p-2">
         <Link href="/settings" className={cn("flex items-center gap-2.5 h-8 px-2.5 rounded-lg text-[13.5px]", pathname === "/settings" ? "bg-accent-soft text-accent font-medium" : "text-text-2 hover:bg-surface-2")}>
           <Settings className="size-[17px]" strokeWidth={1.8} />{" "}{tr("Settings")}

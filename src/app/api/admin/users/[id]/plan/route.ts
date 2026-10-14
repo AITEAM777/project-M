@@ -7,7 +7,7 @@ import { requireAdmin } from "@/server/admin-api";
 import { grantPlan, revokePlan } from "@/server/billing";
 
 const grantSchema = z.object({
-  plan: z.enum(["PRO", "TEAMS"]),
+  plan: z.enum(["PRO", "MAX", "TEAMS"]),
   until: z.coerce.date().refine((d) => d.getTime() > Date.now(), "The date must be in the future"),
   note: z.string().trim().max(300).optional(),
 });

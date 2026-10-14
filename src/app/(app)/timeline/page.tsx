@@ -7,7 +7,7 @@ import useSWRInfinite from "swr/infinite";
 import { isSameDay } from "date-fns";
 import { History, Sparkles } from "lucide-react";
 import { api } from "@/lib/client/api";
-import { useWorkspace } from "@/lib/client/store";
+import { useUpgrade, useWorkspace } from "@/lib/client/store";
 import type { ActivityItem } from "@/lib/client/types";
 import { Button } from "@/components/ui/button";
 import { Card, EmptyState, PageSkeleton, Tabs } from "@/components/ui/misc";
@@ -23,7 +23,7 @@ const FILTERS = translated([
 export default function TimelinePage() {
   const ws = useWorkspace((s) => s.id);
   const [type, setType] = useState("");
-  const { data, size, setSize, isValidating } = useSWRInfinite<{ activity: ActivityItem[] }>(
+  const { data, size, setSize, isValidating } = useSWRInfinite<{ activity: ActivityItem[]; historyDays: number | null }>(
     (i, prev) => (prev && prev.activity.length < 50 ? null : ["/api/activity", ws, type, i === 0 ? "" : prev!.activity[prev!.activity.length - 1].createdAt]),
     ([p, w, t, before]: [string, string, string, string]) => api(`${p}?limit=50${t ? `&type=${t}` : ""}${before ? `&before=${encodeURIComponent(before)}` : ""}`, { ws: w }),
   );
@@ -48,6 +48,12 @@ export default function TimelinePage() {
             })}
           </ol>
           {hasMore && <Button variant="ghost" size="sm" loading={isValidating} onClick={() => setSize(size + 1)}>{tr("Load older")}</Button>}
+          {!hasMore && data[0]?.historyDays && (
+            <p className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted">
+              🕰️ {tr("Start shows the last {n} days. Pro keeps your whole history.", { n: data[0].historyDays })}
+              <button className="font-semibold text-accent hover:underline" onClick={() => useUpgrade.getState().open("history")}>{tr("Learn more")}</button>
+            </p>
+          )}
         </Card>
       )}
     </>

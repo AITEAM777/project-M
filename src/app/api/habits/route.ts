@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { assertSameWorkspace, logActivity, parseBody, route, userAndWorkspace } from "@/lib/http";
 import { habitCreate } from "@/lib/validation";
+import { assertQuota } from "@/server/quota";
 
 /** Habits with completion logs for the last `days` days (default 120) as { "YYYY-MM-DD": count }. */
 export const GET = route(async (req) => {
@@ -24,6 +25,7 @@ export const GET = route(async (req) => {
 export const POST = route(async (req) => {
   const { user, workspaceId } = await userAndWorkspace(req, "EDITOR");
   const body = await parseBody(req, habitCreate);
+  await assertQuota("habits", workspaceId, user.plan);
   await assertSameWorkspace(workspaceId, { goalId: body.goalId });
   const habit = await prisma.habit.create({ data: { ...body, workspaceId } });
   await logActivity(workspaceId, user.id, "created", "habit", habit.id, `Started habit “${habit.title}”`);

@@ -5,7 +5,7 @@ export const fmtDateTime = (d: Date | null | undefined) => (d ? new Intl.DateTim
 export const fmtMoney = (minor: number, currency = "UAH") => `${new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(minor / 100)} ${currency === "UAH" ? "₴" : currency}`;
 export const fmtNum = (n: number) => new Intl.NumberFormat("uk-UA").format(n);
 
-export const PLAN_LABEL: Record<string, string> = { FREE: "Безкоштовний", PRO: "Pro", TEAMS: "Команди" };
+export const PLAN_LABEL: Record<string, string> = { FREE: "Старт", PRO: "Pro", MAX: "Максимум", TEAMS: "Команди" };
 export const STATUS: Record<string, [string, string]> = {
   TRIALING: ["Пробна", "bg-[var(--accent-soft)] text-[var(--accent)]"],
   ACTIVE: ["Активна", "bg-[var(--success-soft)] text-[var(--success)]"],
@@ -19,7 +19,7 @@ export function Badge({ className = "", children }: { className?: string; childr
 }
 
 export function PlanBadge({ plan }: { plan: string }) {
-  const cls = plan === "FREE" ? "bg-[var(--surface-3)] text-[var(--muted)]" : plan === "PRO" ? "bg-[var(--accent)] text-white" : "bg-[var(--text)] text-[var(--surface)]";
+  const cls = plan === "FREE" ? "bg-[var(--surface-3)] text-[var(--muted)]" : plan === "PRO" ? "bg-[var(--accent)] text-white" : plan === "MAX" ? "bg-[#4338CA] text-white" : "bg-[var(--text)] text-[var(--surface)]";
   return <Badge className={cls}>{PLAN_LABEL[plan] ?? plan}</Badge>;
 }
 

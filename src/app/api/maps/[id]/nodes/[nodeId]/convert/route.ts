@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { HttpError, assertSameWorkspace, loadOwned, logActivity, notFound, parseBody, requireUser, route } from "@/lib/http";
 import { textToDoc } from "@/lib/richtext";
 import { nodeConvert } from "@/lib/validation";
+import { assertQuota } from "@/server/quota";
 
 /**
  * Converts a canvas node into a canonical entity (task, note, goal, project, habit)
@@ -16,6 +17,8 @@ export const POST = route(async (req, { params }) => {
   const body = await parseBody(req, nodeConvert);
   await assertSameWorkspace(map.workspaceId, { projectId: body.projectId, goalId: body.goalId });
   const ws = map.workspaceId;
+  const quota = { GOAL: "goals", PROJECT: "projects", HABIT: "habits" } as const;
+  if (body.to in quota) await assertQuota(quota[body.to as keyof typeof quota], ws, user.plan);
   const title = node.title.trim() || "Untitled";
   const description = node.description;
 

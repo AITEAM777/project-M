@@ -18,6 +18,7 @@ import { TaskDrawer } from "@/components/tasks/task-drawer";
 import { TourButton, TourOverlay } from "@/components/tour/tour";
 import { GoalPulse } from "@/components/celebrate/goal-pulse";
 import { Celebration } from "@/components/celebrate/celebration";
+import { UpgradeDialog, WelcomeDialog } from "@/components/billing/upgrade-dialog";
 import { cn } from "@/lib/utils";
 import { initLocale, useLocale } from "@/lib/i18n";
 
@@ -82,6 +83,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       <Toaster />
       <GoalPulse />
       <Celebration />
+      <UpgradeDialog />
+      <WelcomeDialog />
     </div>
   );
 }

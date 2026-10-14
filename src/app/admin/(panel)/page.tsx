@@ -80,10 +80,10 @@ export default async function AdminOverview() {
         </Card>
         <Card title="Хто на якому тарифі">
           <div className="mb-4 flex h-3 overflow-hidden rounded-full bg-[var(--surface-3)]">
-            {(["PRO", "TEAMS"] as const).map((p) => <div key={p} className={p === "PRO" ? "bg-[var(--accent)]" : "bg-[var(--text)]"} style={{ width: `${total ? (planCount(p) / total) * 100 : 0}%` }} />)}
+            {(["PRO", "MAX", "TEAMS"] as const).map((p) => <div key={p} className={p === "PRO" ? "bg-[var(--accent)]" : p === "MAX" ? "bg-[#4338CA]" : "bg-[var(--text)]"} style={{ width: `${total ? (planCount(p) / total) * 100 : 0}%` }} />)}
           </div>
           <ul className="space-y-2.5 text-[14px]">
-            {(["PRO", "TEAMS", "FREE"] as const).map((p) => (
+            {(["PRO", "MAX", "TEAMS", "FREE"] as const).map((p) => (
               <li key={p} className="flex items-center justify-between"><span>{PLAN_LABEL[p]}</span><b className="tabular-nums">{fmtNum(planCount(p))}</b></li>
             ))}
             <li className="flex items-center justify-between text-[var(--muted)]"><span>На пробному періоді</span><b className="tabular-nums">{trialing}</b></li>

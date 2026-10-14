@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, EmptyState, PageSkeleton, Progress, ProgressRing } from "@/components/ui/misc";
 import { DailyBars, HabitHeat } from "@/components/charts/charts";
 import { TaskRow } from "@/components/tasks/task-row";
+import { TrialBanner } from "@/components/billing/plan-widgets";
 import { cn } from "@/lib/utils";
 
 interface Dashboard {
@@ -97,6 +98,7 @@ export default function DashboardPage() {
 
   return (
     <>
+      <TrialBanner />
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm text-muted">{fmt(new Date(), "EEEE, d MMMM")}</p>

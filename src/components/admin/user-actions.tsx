@@ -35,7 +35,7 @@ export function UserActions({ userId, plan, sessions }: { userId: string; plan: 
         <div className="flex flex-wrap gap-2">
           <label className="sr-only" htmlFor="grant-plan">Тариф</label>
           <select id="grant-plan" className={field} value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })}>
-            <option value="PRO">Pro</option><option value="TEAMS">Команди</option>
+            <option value="PRO">Pro</option><option value="MAX">Максимум</option><option value="TEAMS">Команди</option>
           </select>
           <label className="sr-only" htmlFor="grant-until">До дати</label>
           <input id="grant-until" type="date" className={field} value={form.until} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setForm({ ...form, until: e.target.value })} />

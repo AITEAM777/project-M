@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
-import { HttpError, parseBody, requireUser, route } from "@/lib/http";
+import { parseBody, requireUser, route } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
+import { limitError } from "@/server/quota";
 import { workspaceSchema } from "@/lib/validation";
 import { bootstrapWorkspace } from "@/server/bootstrap";
 
@@ -18,7 +19,8 @@ export const POST = route(async (req) => {
   const user = await requireUser();
   const body = await parseBody(req, workspaceSchema);
   const count = await prisma.workspace.count({ where: { ownerId: user.id } });
-  if (count >= limitsFor(user.plan).workspaces) throw new HttpError(402, "Workspace limit reached for your plan");
+  const max = limitsFor(user.plan).workspaces;
+  if (count >= max) throw limitError("workspaces", max, "Workspace limit reached for your plan");
   const ws = await prisma.$transaction(async (tx) => {
     const w = await bootstrapWorkspace(tx, user.id, body.name, user.locale);
     return body.icon ? tx.workspace.update({ where: { id: w.id }, data: { icon: body.icon } }) : w;

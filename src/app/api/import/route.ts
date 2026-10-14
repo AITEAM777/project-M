@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { HttpError, requireUser, route } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
+import { limitError } from "@/server/quota";
 import { uid } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -22,7 +23,8 @@ export const POST = route(async (req) => {
   }
   if (data?.format !== "nodera-export" || !data.workspace) throw new HttpError(400, "This is not a Nodera export file");
   const owned = await prisma.workspace.count({ where: { ownerId: user.id } });
-  if (owned >= limitsFor(user.plan).workspaces) throw new HttpError(402, "Workspace limit reached for your plan");
+  const max = limitsFor(user.plan).workspaces;
+  if (owned >= max) throw limitError("workspaces", max, "Workspace limit reached for your plan");
   const w = data.workspace;
   const ids = new Map<string, string>();
   const map = (old: string | null | undefined, prefix = "") => {

@@ -4,6 +4,8 @@ import { useStore } from "zustand";
 import type { MapState, MapStore } from "./store";
 
 export interface MapActions {
+  /** Path to goal and structures are available (paid plans). */
+  proTools: boolean;
   toggleTask: (nodeId: string) => void;
   toggleHabitToday: (nodeId: string) => void;
   focus: (nodeId: string) => void;

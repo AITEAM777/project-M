@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { assertSameWorkspace, logActivity, parseBody, route, userAndWorkspace } from "@/lib/http";
 import { taskProgress } from "@/lib/progress";
 import { projectCreate } from "@/lib/validation";
+import { assertQuota } from "@/server/quota";
 
 export const GET = route(async (req) => {
   const { workspaceId } = await userAndWorkspace(req);
@@ -28,6 +29,7 @@ export const GET = route(async (req) => {
 export const POST = route(async (req) => {
   const { user, workspaceId } = await userAndWorkspace(req, "EDITOR");
   const body = await parseBody(req, projectCreate);
+  await assertQuota("projects", workspaceId, user.plan);
   await assertSameWorkspace(workspaceId, { folderId: body.folderId, goalId: body.goalId });
   const project = await prisma.project.create({ data: { ...body, workspaceId } });
   await logActivity(workspaceId, user.id, "created", "project", project.id, `Created project “${project.title}”`);

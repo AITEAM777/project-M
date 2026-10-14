@@ -3,6 +3,7 @@ import type { MapNode, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { HttpError } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
+import { assertQuota, limitError } from "./quota";
 import { goalProgress, collectGoalTasks, taskProgress } from "@/lib/progress";
 import { utcDayKey } from "@/lib/habits";
 import type { EdgeInput, NodeInput } from "@/lib/validation";
@@ -96,7 +97,10 @@ export async function saveGraph(
   input: { nodes: NodeInput[]; edges: EdgeInput[]; viewport?: { x: number; y: number; zoom: number } },
 ) {
   const limit = limitsFor(plan).nodesPerMap;
-  if (input.nodes.length > limit) throw new HttpError(402, `Your plan allows up to ${limit} nodes per map`);
+  // Only growth past the limit is refused, so maps made on a bigger plan stay editable.
+  if (input.nodes.length > limit && input.nodes.length > (await prisma.mapNode.count({ where: { mapId: map.id } }))) {
+    throw limitError("nodes", limit, `Your plan allows up to ${limit} cards per map`);
+  }
 
   const nodeIds = new Set(input.nodes.map((n) => n.id));
   if (nodeIds.size !== input.nodes.length) throw new HttpError(400, "Duplicate node ids");
@@ -184,9 +188,6 @@ async function validateRefs(workspaceId: string, nodes: NodeInput[]) {
   }
 }
 
-export async function assertMapQuota(workspaceId: string, plan: string) {
-  const limit = limitsFor(plan).activeMindMaps;
-  if (!Number.isFinite(limit)) return;
-  const count = await prisma.mindMap.count({ where: { workspaceId, archivedAt: null } });
-  if (count >= limit) throw new HttpError(402, `Your plan allows ${limit} active mind maps. Archive one or upgrade.`);
+export function assertMapQuota(workspaceId: string, plan: string) {
+  return assertQuota("maps", workspaceId, plan);
 }

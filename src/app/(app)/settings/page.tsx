@@ -1,5 +1,7 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { planName } from "@/lib/client/billing";
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Monitor, Moon, Sun, Upload } from "lucide-react";
@@ -27,7 +29,6 @@ export default function SettingsPage() {
   const u = me.user;
   const save = async (body: object, msg = "Saved") => { try { await patch("/api/me", body); mutate(); toast.success(msg); } catch (e) { toast.error(e); } };
   const theme = (t: string) => { applyTheme(t); save({ theme: t }, "Theme updated"); };
-  const limit = (v: number | null, unit = "") => (v == null ? "Unlimited" : `${unit === "MB" ? Math.round(v / 1048576) : v}${unit ? ` ${unit}` : ""}`);
 
   return (
     <div className="max-w-3xl">
@@ -74,15 +75,9 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="p-5">
-          <div className="mb-3 flex items-center gap-2"><h2 className="font-semibold">{tr("Plan & limits")}</h2><Badge className="border-accent/30 bg-accent-soft text-accent">{u.plan}</Badge></div>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-            <div><dt className="text-muted">{tr("Active mind maps")}</dt><dd className="font-medium">{limit(me.limits.activeMindMaps)}</dd></div>
-            <div><dt className="text-muted">{tr("Nodes per map")}</dt><dd className="font-medium">{limit(me.limits.nodesPerMap)}</dd></div>
-            <div><dt className="text-muted">{tr("Workspaces")}</dt><dd className="font-medium">{limit(me.limits.workspaces)}</dd></div>
-            <div><dt className="text-muted">{tr("Storage")}</dt><dd className="font-medium">{limit(me.limits.storageBytes, "MB")}</dd></div>
-            <div><dt className="text-muted">{tr("AI requests / day")}</dt><dd className="font-medium">{limit(me.limits.aiRequestsPerDay)}</dd></div>
-          </dl>
-          <p className="mt-3 text-xs text-muted">{tr("Pro and Teams plans are coming soon. Billing is not enabled yet.")}</p>
+          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("Plan & limits")}</h2><Badge className="border-accent/30 bg-accent-soft text-accent">{planName(u.plan)}</Badge></div>
+          <p className="mb-3 text-sm text-muted">{tr("See what you use, compare plans and manage your subscription.")}</p>
+          <Link href="/billing"><Button variant="primary" size="sm">{tr("Plan & billing")} →</Button></Link>
         </Card>
 
         <Card data-tour="settings-data" className="p-5">

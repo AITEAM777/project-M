@@ -11,7 +11,7 @@ type Search = { q?: string; plan?: string; page?: string };
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
-  const plan = ["FREE", "PRO", "TEAMS"].includes(sp.plan ?? "") ? (sp.plan as "FREE" | "PRO" | "TEAMS") : undefined;
+  const plan = ["FREE", "PRO", "MAX", "TEAMS"].includes(sp.plan ?? "") ? (sp.plan as "FREE" | "PRO" | "MAX" | "TEAMS") : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
   const where: Prisma.UserWhereInput = {
     ...(plan ? { plan } : {}),
@@ -53,7 +53,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
           <button className="h-10 rounded-xl bg-[var(--accent)] px-4 text-[14px] font-semibold text-white">Знайти</button>
         </form>
         <div className="mb-4 flex flex-wrap gap-1.5 text-[13px]">
-          {[["", "Усі"], ["PRO", "Pro"], ["TEAMS", "Команди"], ["FREE", "Безкоштовні"]].map(([v, l]) => (
+          {[["", "Усі"], ["PRO", "Pro"], ["MAX", "Максимум"], ["TEAMS", "Команди"], ["FREE", "Старт"]].map(([v, l]) => (
             <Link key={v} href={href({ plan: (v || undefined) as Search["plan"] })} className={`rounded-full border px-3 py-1 ${(plan ?? "") === v ? "border-[var(--text)] bg-[var(--text)] text-[var(--surface)]" : "border-[var(--border)] hover:bg-[var(--surface-2)]"}`}>{l}</Link>
           ))}
         </div>

@@ -1,11 +1,26 @@
 "use client";
 import useSWR, { mutate as globalMutate, type SWRConfiguration } from "swr";
-import { useWorkspace } from "./store";
+import { tr } from "@/lib/i18n";
+import { toast, useUpgrade, useWorkspace, type UpgradeReason } from "./store";
 
 export class ApiError extends Error {
+  /** True when the UI already reacted (e.g. opened the upgrade dialog). */
+  handled = false;
   constructor(public status: number, message: string, public details?: unknown) {
     super(message);
   }
+}
+
+/** 402 = a plan limit. Opens the upgrade dialog (or a gentle toast for the daily AI quota). */
+function onPlanLimit(details: unknown) {
+  const d = details as { limit?: UpgradeReason; max?: number } | undefined;
+  if (!d?.limit || typeof window === "undefined") return false;
+  if (d.limit === "ai") {
+    toast.info(tr("You've used all {n} AI requests for today. The limit resets tomorrow.", { n: d.max ?? 0 }), { label: "More in Pro", run: () => useUpgrade.getState().open("ai", d.max) });
+  } else {
+    useUpgrade.getState().open(d.limit, d.max);
+  }
+  return true;
 }
 
 /** Adds ?ws= and ?tzo= (timezone offset) so the server can scope and localize. */
@@ -33,7 +48,9 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
   if (!res.ok) {
     const msg = (data && typeof data === "object" && "error" in data ? String((data as { error: string }).error) : null) ?? `Request failed (${res.status})`;
     const details = typeof data === "object" ? (data as { details?: unknown }).details : undefined;
-    throw new ApiError(res.status, friendlyValidation(msg, details), details);
+    const err = new ApiError(res.status, friendlyValidation(msg, details), details);
+    if (res.status === 402) err.handled = onPlanLimit(details);
+    throw err;
   }
   return data as T;
 }
