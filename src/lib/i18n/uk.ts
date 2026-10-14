@@ -1275,4 +1275,5 @@ export const uk: Record<string, string> = {
  "AI: 200 requests · 5 spaces": "AI: 200 запитів · 5 просторів",
  "Everything in Pro": "Усе з Pro",
  "AI: 1,000 requests · 10,000 cards": "AI: 1 000 запитів · 10 000 карток",
+ "/ mo · {price} a year": "/ міс · {price} на рік",
 };

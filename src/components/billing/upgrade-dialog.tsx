@@ -73,7 +73,7 @@ export function UpgradeDialog() {
             <button key={p} role="radio" aria-checked={period === p} onClick={() => setPeriod(p)}
               className={cn("rounded-xl border px-3 py-2 text-left text-sm transition-colors", period === p ? "border-accent bg-accent-soft" : "border-border hover:bg-surface-2")}>
               <span className="block text-xs text-muted">{p === "month" ? tr("Monthly") : <>{tr("Yearly")} <b className="text-success">−20%</b></>}</span>
-              <b className="tabular">{monthly(billing.prices, target, p)} ₴</b> <span className="text-xs text-muted">{tr("/ mo")}</span>
+              <b className="tabular">{monthly(billing.prices, target, p)}</b> <span className="text-xs text-muted">{tr("/ mo")}</span>
             </button>
           ))}
         </div>

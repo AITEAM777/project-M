@@ -15,7 +15,7 @@ export interface Billing {
   subscription: { plan: PlanId; period: "month" | "year" | "trial" | "manual"; status: "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED"; currentPeriodEnd: string; cancelAtPeriodEnd: boolean } | null;
   limits: { activeGoals: number | null; activeMindMaps: number | null; nodesPerMap: number | null; habits: number | null; projects: number | null; workspaces: number | null; storageBytes: number | null; aiRequestsPerDay: number | null; historyDays: number | null; proTools: boolean };
   usage: { goals: number; maps: number; habits: number; projects: number; ai: number; storageBytes: number; workspaces: number };
-  prices: Record<"PRO" | "MAX", Record<Period, number>>;
+  prices: Record<Currency, Record<"PRO" | "MAX", Record<Period, number>>>;
 }
 
 export function useBilling() {
@@ -28,7 +28,22 @@ export function useProTools() {
   return data ? data.limits.proTools : true;
 }
 
-export const monthly = (b: Billing["prices"], plan: "PRO" | "MAX", period: Period) => (period === "year" ? Math.round(b[plan].year / 12) : b[plan].month);
+export type Currency = "UAH" | "USD";
+
+/** Hryvnias for the Ukrainian interface, dollars otherwise. */
+export const currency = (): Currency => (getLocale() === "uk" ? "UAH" : "USD");
+
+export function formatPrice(amount: number, cur: Currency = currency()) {
+  if (cur === "UAH") return `${Math.round(amount).toLocaleString("uk-UA")} ₴`;
+  return amount === 0 ? "$0" : `$${amount.toFixed(2)}`;
+}
+
+/** Per-month price; for yearly billing the yearly total divided by 12. */
+export const monthly = (b: Billing["prices"], plan: "PRO" | "MAX", period: Period) => {
+  const p = b[currency()][plan];
+  return formatPrice(period === "year" ? p.year / 12 : p.month);
+};
+export const yearly = (b: Billing["prices"], plan: "PRO" | "MAX") => formatPrice(b[currency()][plan].year);
 
 /** Test mode: switches the plan on immediately, then shows the welcome dialog. */
 export async function choosePlan(plan: "PRO" | "MAX", period: Period, trial = false) {

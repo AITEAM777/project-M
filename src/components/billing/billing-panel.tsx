@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Check, ChevronDown, Clock } from "lucide-react";
 import { invalidate, post } from "@/lib/client/api";
 import { confirm, toast } from "@/lib/client/store";
-import { choosePlan, monthly, planName, useBilling, type Billing, type Period } from "@/lib/client/billing";
+import { choosePlan, formatPrice, monthly, planName, useBilling, yearly, type Billing, type Period } from "@/lib/client/billing";
 import { Button } from "@/components/ui/button";
 import { Card, PageSkeleton } from "@/components/ui/misc";
 import { COMPARE, FEATURES, TAGLINE } from "./plan-data";
@@ -144,9 +144,9 @@ function PlanCard({ b, id, period, popular, busy, onChoose }: { b: Billing; id: 
       </div>
       <p className={cn("mt-1 text-[13.5px]", popular ? "text-white/75" : "text-muted")}>{tr(TAGLINE[id])}</p>
       <p className="mt-6 flex flex-wrap items-baseline gap-x-2">
-        <span className="font-display text-[38px] font-semibold leading-none tracking-tight">{id === "FREE" ? "0 ₴" : `${monthly(b.prices, id, period)} ₴`}</span>
+        <span className="font-display text-[38px] font-semibold leading-none tracking-tight">{id === "FREE" ? formatPrice(0) : monthly(b.prices, id, period)}</span>
         <span className={cn("text-[13px]", popular ? "text-white/75" : "text-muted")}>
-          {id === "FREE" ? tr("forever") : period === "year" ? tr("/ mo · {n} ₴ a year", { n: b.prices[id].year.toLocaleString("uk-UA") }) : tr("/ mo")}
+          {id === "FREE" ? tr("forever") : period === "year" ? tr("/ mo · {price} a year", { price: yearly(b.prices, id) }) : tr("/ mo")}
         </span>
       </p>
       <button disabled={current || !cta || busy !== null} onClick={onChoose}
@@ -206,7 +206,6 @@ function Details({ b }: { b: Billing }) {
           <p className="font-semibold">{tr("Teams")} <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold">{tr("coming soon")}</span></p>
           <p className="text-sm text-white/70">{tr("Shared spaces, roles, shared maps and team goals.")}</p>
         </div>
-        <p className="ml-auto text-sm text-white/70">{tr("from {n} ₴ per person / mo", { n: 199 })}</p>
       </Card>
     </div>
   );

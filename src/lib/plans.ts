@@ -31,10 +31,15 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   TEAMS: { activeGoals: Infinity, activeMindMaps: Infinity, nodesPerMap: 10000, habits: Infinity, projects: Infinity, workspaces: Infinity, storageBytes: 100_000 * MB, aiRequestsPerDay: 1000, historyDays: Infinity, proTools: true },
 };
 
-/** Prices in UAH. The yearly price is billed once; ~20% cheaper than 12 months. */
-export const PRICES: Record<PaidPlan, Record<Period, number>> = {
-  PRO: { month: 149, year: 1430 },
-  MAX: { month: 349, year: 3350 },
+export type Currency = "UAH" | "USD";
+
+/**
+ * Prices per currency: hryvnias for the Ukrainian interface, dollars for English.
+ * The yearly price is billed once and works out ~20% cheaper per month.
+ */
+export const PRICES: Record<Currency, Record<PaidPlan, Record<Period, number>>> = {
+  UAH: { PRO: { month: 449, year: 4308 }, MAX: { month: 759, year: 7284 } },
+  USD: { PRO: { month: 9.99, year: 95.88 }, MAX: { month: 16.99, year: 163.08 } },
 };
 
 export const TRIAL_DAYS = 14;
