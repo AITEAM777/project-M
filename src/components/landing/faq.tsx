@@ -3,8 +3,10 @@ import { useId, useState } from "react";
 import { Reveal, useLanding } from "./ui";
 
 export function FAQ() {
-  const { t } = useLanding();
-  const [open, setOpen] = useState<number | null>(null);
+  const { t, lang } = useLanding();
+  // The tutorial question leads the list and starts open.
+  const items: { q: string; a: string; link?: string }[] = [{ q: t.guide.faqQ, a: t.guide.faqA, link: t.guide.faqLink }, ...t.faq.items];
+  const [open, setOpen] = useState<number | null>(0);
   const base = useId();
   return (
     <section id="faq" className="l-section scroll-mt-20" aria-labelledby="faq-title">
@@ -14,7 +16,7 @@ export function FAQ() {
           <h2 id="faq-title" className="l-h2 mt-4">{t.faq.title}</h2>
         </Reveal>
         <Reveal delay={80} className="mt-10 border-b border-[var(--border)]">
-          {t.faq.items.map((f, i) => {
+          {items.map((f, i) => {
             const isOpen = open === i;
             return (
               <div key={f.q} className="border-t border-[var(--border)]">
@@ -28,7 +30,7 @@ export function FAQ() {
                 </h3>
                 <div id={`${base}-${i}`} role="region" aria-labelledby={`${base}-q${i}`} className="l-acc-panel" data-open={isOpen}>
                   <div className="overflow-hidden">
-                    <p className="max-w-[760px] pb-6 text-[16px] leading-relaxed text-[var(--text-muted)]">{f.a}</p>
+                    <p className="max-w-[760px] pb-6 text-[16px] leading-relaxed text-[var(--text-muted)]">{f.a}{f.link && <>{" "}<a href={`/guide?lang=${lang}`} className="font-semibold text-[var(--brand)] hover:underline">{f.link} →</a></>}</p>
                   </div>
                 </div>
               </div>

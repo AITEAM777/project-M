@@ -2,7 +2,9 @@
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Lightbulb, X } from "lucide-react";
+import { BookOpen, Lightbulb, X } from "lucide-react";
+import { guideHref, TOUR_SECTION } from "@/lib/guide";
+import { Dialog } from "@/components/ui/dialog";
 import { getLocale, tr } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -62,7 +64,7 @@ export function TourOverlay() {
 
   useLayoutEffect(() => { if (card.current) setCardH(card.current.offsetHeight); }, [current, ready, rect]);
 
-  const next = useCallback(() => { if (!tour) return; if (step < tour.steps.length - 1) go(step + 1); else finish(); }, [tour, step, go, finish]);
+  const next = useCallback(() => { if (!tour) return; if (step < tour.steps.length - 1) go(step + 1); else finish(true); }, [tour, step, go, finish]);
   const back = useCallback(() => step > 0 && go(step - 1), [step, go]);
 
   useEffect(() => {
@@ -121,7 +123,7 @@ export function TourOverlay() {
             <p className="text-[11px] font-medium text-muted">{tr("Step {a} of {b}", { a: step + 1, b: tour.steps.length })}</p>
             <h3 className="font-semibold leading-snug">{current.title[lang]}</h3>
           </div>
-          <button onClick={finish} className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-text" aria-label={tr("Close tour")}><X className="size-4" /></button>
+          <button onClick={() => finish()} className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-text" aria-label={tr("Close tour")}><X className="size-4" /></button>
         </div>
         <p className="text-sm leading-relaxed text-text-2">{current.body[lang]}</p>
         <div className="mt-4 flex items-center gap-2">
@@ -131,6 +133,11 @@ export function TourOverlay() {
           {step > 0 && <Button size="sm" variant="ghost" onClick={back}>{tr("Back")}</Button>}
           <Button size="sm" variant="primary" onClick={next} autoFocus>{step < tour.steps.length - 1 ? tr("Next") : tr("Got it")}</Button>
         </div>
+        {TOUR_SECTION[tour.id] && (
+          <a href={guideHref(TOUR_SECTION[tour.id])} onClick={() => finish()} className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-[13px] font-medium text-accent hover:underline">
+            <BookOpen className="size-3.5" />{tr("Learn more about this section in the tutorial")} →
+          </a>
+        )}
       </div>
     </div>,
     document.body,
@@ -159,5 +166,24 @@ export function TourButton() {
         {tr("How does this page work?")}
       </span>
     </button>
+  );
+}
+
+/** After the first dashboard tour: offer the full tutorial on how all sections connect. */
+export function GuideOffer() {
+  const { offerGuide, closeGuideOffer } = useTour();
+  if (!offerGuide) return null;
+  return (
+    <Dialog open onClose={closeGuideOffer} size="sm">
+      <div className="pt-2">
+        <div className="text-3xl" aria-hidden>🎉</div>
+        <h2 className="mt-2 text-lg font-semibold tracking-tight">{tr("Tour complete!")}</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">{tr("Want to understand in 3 minutes how thoughts, maps, goals, tasks and habits connect?")}</p>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={closeGuideOffer}>{tr("Later")}</Button>
+          <Button variant="primary" autoFocus onClick={() => { closeGuideOffer(); window.location.assign(guideHref()); }}><BookOpen className="size-4" />{tr("Read the tutorial (3 min)")}</Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }

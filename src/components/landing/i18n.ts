@@ -90,6 +90,13 @@ const uk = {
   },
   cta: { titleA: "Почніть думати ", titleHi: "ясніше", titleB: ".", sub: "Перша нотатка — за 10 секунд.", button: "Створити акаунт" },
   footer: { about: "Про нас", privacy: "Конфіденційність", terms: "Умови", contact: "Контакти" },
+  guide: {
+    more: "Детальніше: як усе пов'язано",
+    footer: "Туторіал",
+    faqQ: "Як усе працює і як розділи пов'язані між собою?",
+    faqA: "Є покроковий туторіал: Дашборд, Думки, Нотатки, Карти, Цілі, Задачі, Звички й Календар — що робить кожен розділ, до чого його прив'язати і як вони з'єднуються.",
+    faqLink: "Читати туторіал",
+  },
   video: { title: "Як працює Nodera", soon: "Відео скоро з'явиться.", close: "Закрити відео" },
 };
 
@@ -186,6 +193,13 @@ const en: Copy = {
   },
   cta: { titleA: "Start thinking ", titleHi: "clearer", titleB: ".", sub: "Your first note in 10 seconds.", button: "Create account" },
   footer: { about: "About", privacy: "Privacy", terms: "Terms", contact: "Contact" },
+  guide: {
+    more: "Learn more: how it all connects",
+    footer: "Tutorial",
+    faqQ: "How does it all work, and how do the sections connect?",
+    faqA: "There's a step-by-step tutorial: Dashboard, Thoughts, Notes, Maps, Goals, Tasks, Habits and Calendar — what each section does, what to link it to and how they fit together.",
+    faqLink: "Read the tutorial",
+  },
   video: { title: "How Nodera works", soon: "The video is coming soon.", close: "Close video" },
 };
 

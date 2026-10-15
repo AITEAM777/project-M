@@ -1,5 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { guideHref } from "@/lib/guide";
 import Link from "next/link";
 import { useState } from "react";
 import { FolderTree, Plus, Star, Target } from "lucide-react";
@@ -22,7 +23,7 @@ export default function ProjectsPage() {
       <PageHeader title={tr("Projects")} description={tr("Structured collections of tasks that move your goals forward.")}
         actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: tr("Active") }, { value: "completed", label: tr("Completed") }, { value: "archived", label: tr("Archived") }]} /><Button data-tour="projects-new" variant="primary" onClick={() => openCreate("project")}><Plus className="size-4" />{" "}{tr("New project")}</Button></>} />
       {!list ? <PageSkeleton /> : !list.length ? (
-        <EmptyState icon={<FolderTree className="size-6" />} title={tr("No projects here")} body={tr("Group related tasks into a project and link it to a goal to track progress automatically.")}
+        <EmptyState guide={{ href: guideHref("projects"), label: tr("How projects work — in the tutorial") }} icon={<FolderTree className="size-6" />} title={tr("No projects here")} body={tr("Group related tasks into a project and link it to a goal to track progress automatically.")}
           action={tab === "active" && <Button variant="primary" onClick={() => openCreate("project")}><Plus className="size-4" />{" "}{tr("Create a project")}</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

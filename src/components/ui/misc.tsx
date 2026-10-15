@@ -58,13 +58,15 @@ export function PageSkeleton() {
   );
 }
 
-export function EmptyState({ icon, title, body, action, className }: { icon?: React.ReactNode; title: string; body?: string; action?: React.ReactNode; className?: string }) {
+/** `guide`: a "how this section works" link to the tutorial, e.g. { href: guideHref("goals"), label: "…" }. */
+export function EmptyState({ icon, title, body, action, guide, className }: { icon?: React.ReactNode; title: string; body?: string; action?: React.ReactNode; guide?: { href: string; label: string }; className?: string }) {
   return (
     <div className={cn("flex flex-col items-center justify-center text-center py-14 px-6 rounded-2xl border border-dashed border-border bg-surface/40", className)}>
       {icon && <div className="mb-3 grid place-items-center size-12 rounded-2xl bg-accent-soft text-accent">{icon}</div>}
       <h3 className="font-semibold">{title}</h3>
       {body && <p className="mt-1 max-w-sm text-sm text-muted">{body}</p>}
       {action && <div className="mt-4">{action}</div>}
+      {guide && <a href={guide.href} className="mt-3 text-[13px] font-medium text-accent hover:underline">📖 {guide.label} →</a>}
     </div>
   );
 }

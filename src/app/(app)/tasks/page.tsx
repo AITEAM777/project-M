@@ -1,5 +1,6 @@
 "use client";
 import { tr, translated } from "@/lib/i18n";
+import { guideHref } from "@/lib/guide";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckSquare, Kanban, List } from "lucide-react";
@@ -56,7 +57,7 @@ function Tasks() {
         <QuickAddTask defaults={filter === "today" ? { dueDate: new Date(new Date().setHours(12, 0, 0, 0)).toISOString() } : undefined} onAdded={() => mutate()} />
       </div>
       {!data ? <PageSkeleton /> : !data.tasks.length ? (
-        <EmptyState icon={<CheckSquare className="size-6" />} title={filter === "today" ? tr("Nothing due today") : filter === "overdue" ? tr("No overdue tasks 🎉") : tr("No tasks here")} body={tr("Add a task above, or turn any thought on a mind map into a task.")} />
+        <EmptyState guide={{ href: guideHref("tasks"), label: tr("How tasks work — in the tutorial") }} icon={<CheckSquare className="size-6" />} title={filter === "today" ? tr("Nothing due today") : filter === "overdue" ? tr("No overdue tasks 🎉") : tr("No tasks here")} body={tr("Add a task above, or turn any thought on a mind map into a task.")} />
       ) : view === "board" ? (
         <div data-tour="tasks-list"><TaskBoard tasks={data.tasks} onChanged={() => mutate()} /></div>
       ) : (

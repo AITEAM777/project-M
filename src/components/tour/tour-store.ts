@@ -14,7 +14,11 @@ export const useTour = create<{
   loadSeen: () => void;
   start: (id: string) => void;
   go: (step: number) => void;
-  finish: () => void;
+  /** `completed`: the user went through to the last step (not closed early). */
+  finish: (completed?: boolean) => void;
+  /** Set once the first dashboard tour is completed: offer the full tutorial next. */
+  offerGuide: boolean;
+  closeGuideOffer: () => void;
 }>((set, get) => ({
   active: null,
   step: 0,
@@ -22,12 +26,14 @@ export const useTour = create<{
   loadSeen: () => set({ seen: readSeen() }),
   start: (id) => set({ active: id, step: 0 }),
   go: (step) => set({ step }),
-  finish: () => {
+  finish: (completed = false) => {
     const { active, seen } = get();
     const next = active ? { ...seen, [active]: true as const } : seen;
     try { localStorage.setItem(SEEN_KEY, JSON.stringify(next)); } catch {}
-    set({ active: null, step: 0, seen: next });
+    set({ active: null, step: 0, seen: next, offerGuide: completed && active === "dashboard" });
   },
+  offerGuide: false,
+  closeGuideOffer: () => set({ offerGuide: false }),
 }));
 
 /** Lets pages react to tour steps (e.g. the map selects a node so its panel can be explained). */

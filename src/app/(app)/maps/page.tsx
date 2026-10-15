@@ -1,5 +1,6 @@
 "use client";
 import { tp, tr } from "@/lib/i18n";
+import { guideHref } from "@/lib/guide";
 import Link from "next/link";
 import { useState } from "react";
 import { Archive, ArchiveRestore, Copy, MoreHorizontal, Plus, Star, Trash2, Workflow } from "lucide-react";
@@ -26,7 +27,7 @@ export default function MapsPage() {
         actions={<><Tabs data-tour="maps-tabs" value={tab} onChange={setTab} items={[{ value: "active", label: tr("Active") }, { value: "archived", label: tr("Archived") }]} /><Button data-tour="maps-new" variant="primary" onClick={() => openCreate("map")}><Plus className="size-4" />{" "}{tr("New map")}</Button></>} />
       {tab === "active" && limit != null && data && <p className="-mt-3 mb-4 text-xs text-muted">{tr("{a} of {b} active maps on your plan.", { a: data.maps.length, b: limit })}</p>}
       {!data ? <PageSkeleton /> : !data.maps.length ? (
-        <EmptyState icon={<Workflow className="size-6" />} title={tab === "active" ? tr("No mind maps yet") : tr("No archived maps")}
+        <EmptyState guide={{ href: guideHref("maps"), label: tr("How mind maps work — in the tutorial") }} icon={<Workflow className="size-6" />} title={tab === "active" ? tr("No mind maps yet") : tr("No archived maps")}
           body={tr("Start from a blank canvas or a template like “Personal development” to see how your goals connect.")}
           action={tab === "active" && <Button variant="primary" onClick={() => openCreate("map")}><Plus className="size-4" />{" "}{tr("Create your first map")}</Button>} />
       ) : (

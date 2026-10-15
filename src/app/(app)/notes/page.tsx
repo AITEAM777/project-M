@@ -1,5 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { guideHref } from "@/lib/guide";
 import Link from "next/link";
 import { useState } from "react";
 import { FileText, Lightbulb, Plus, Search, Star } from "lucide-react";
@@ -45,7 +46,7 @@ export default function NotesPage() {
         ]} />
       </div>
       {!data ? <PageSkeleton /> : !data.notes.length ? (
-        <EmptyState icon={<FileText className="size-6" />} title={dq || folder || tab !== "all" ? tr("No matching notes") : tr("No notes yet")} body={tr("Notes support headings, checklists, tables, code, images and links to other notes.")}
+        <EmptyState guide={{ href: guideHref("notes"), label: tr("How notes work — in the tutorial") }} icon={<FileText className="size-6" />} title={dq || folder || tab !== "all" ? tr("No matching notes") : tr("No notes yet")} body={tr("Notes support headings, checklists, tables, code, images and links to other notes.")}
           action={<Button variant="primary" onClick={() => openCreate("note")}><Plus className="size-4" />{" "}{tr("Write a note")}</Button>} />
       ) : (
         <Card className="divide-y divide-border overflow-hidden">

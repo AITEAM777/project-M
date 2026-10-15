@@ -15,7 +15,7 @@ import { CommandPalette } from "./command-palette";
 import { CreateDialogs } from "@/components/forms/create-dialogs";
 import { Onboarding } from "./onboarding";
 import { TaskDrawer } from "@/components/tasks/task-drawer";
-import { TourButton, TourOverlay } from "@/components/tour/tour";
+import { GuideOffer, TourButton, TourOverlay } from "@/components/tour/tour";
 import { GoalPulse } from "@/components/celebrate/goal-pulse";
 import { Celebration } from "@/components/celebrate/celebration";
 import { UpgradeDialog, WelcomeDialog } from "@/components/billing/upgrade-dialog";
@@ -80,6 +80,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       <ConfirmHost />
       <TourButton />
       <TourOverlay />
+      <GuideOffer />
       <Toaster />
       <GoalPulse />
       <Celebration />

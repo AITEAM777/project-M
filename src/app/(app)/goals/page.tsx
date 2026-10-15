@@ -1,5 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { guideHref } from "@/lib/guide";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Goal as GoalIcon, Plus } from "lucide-react";
@@ -23,7 +24,7 @@ export default function GoalsPage() {
       <PageHeader title={tr("Goals")} description={tr("Long-term outcomes, measured by real milestones and completed work.")}
         actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: tr("In progress") }, { value: "done", label: tr("Achieved") }, { value: "all", label: tr("All") }]} /><Button data-tour="goals-new" variant="primary" onClick={() => openCreate("goal")}><Plus className="size-4" />{" "}{tr("New goal")}</Button></>} />
       {!data ? <PageSkeleton /> : !goals.length ? (
-        <EmptyState icon={<GoalIcon className="size-6" />} title={tab === "done" ? tr("No achieved goals yet") : tr("No goals yet")} body={tr("Example: “Improve physical fitness” with milestones like “Exercise 3× per week” and “Evaluate after 30 days”.")}
+        <EmptyState guide={{ href: guideHref("goals"), label: tr("How goals work — in the tutorial") }} icon={<GoalIcon className="size-6" />} title={tab === "done" ? tr("No achieved goals yet") : tr("No goals yet")} body={tr("Example: “Improve physical fitness” with milestones like “Exercise 3× per week” and “Evaluate after 30 days”.")}
           action={tab !== "done" && <Button variant="primary" onClick={() => openCreate("goal")}><Plus className="size-4" />{" "}{tr("Set your first goal")}</Button>} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -1,5 +1,6 @@
 "use client";
 import { fmt } from "@/lib/client/format";
+import { guideHref } from "@/lib/guide";
 import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -42,7 +43,7 @@ export default function HabitsPage() {
       <PageHeader title={tr("Habits")} description={tr("Small, repeated actions that compound into your goals.")}
         actions={<><Tabs value={tab} onChange={setTab} items={[{ value: "active", label: tr("Active") }, { value: "archived", label: tr("Archived") }]} /><Button data-tour="habits-new" variant="primary" onClick={() => openCreate("habit")}><Plus className="size-4" />{" "}{tr("New habit")}</Button></>} />
       {!data ? <PageSkeleton /> : !data.habits.length ? (
-        <EmptyState icon={<Repeat className="size-6" />} title={tab === "active" ? tr("No habits yet") : tr("No archived habits")} body={tr("Examples: exercise, read 20 pages, practice a language, save money, journal, drink water.")}
+        <EmptyState guide={{ href: guideHref("habits"), label: tr("How habits work — in the tutorial") }} icon={<Repeat className="size-6" />} title={tab === "active" ? tr("No habits yet") : tr("No archived habits")} body={tr("Examples: exercise, read 20 pages, practice a language, save money, journal, drink water.")}
           action={tab === "active" && <Button variant="primary" onClick={() => openCreate("habit")}><Plus className="size-4" />{" "}{tr("Create a habit")}</Button>} />
       ) : (
         <>

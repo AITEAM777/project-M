@@ -1,5 +1,6 @@
 "use client";
 import { tr } from "@/lib/i18n";
+import { guideHref } from "@/lib/guide";
 import Link from "next/link";
 import { useState } from "react";
 import { Archive, CheckSquare, FileText, FolderInput, Lightbulb, MoreHorizontal, Zap } from "lucide-react";
@@ -50,7 +51,7 @@ export default function ThoughtsPage() {
         </div>
       </Card>
       {!data ? <PageSkeleton /> : !data.notes.length ? (
-        <EmptyState icon={<Lightbulb className="size-6" />} title={filter === "inbox" ? tr("Inbox zero") : tr("No thoughts yet")} body={filter === "inbox" ? tr("Every thought has a home. Capture something new above.") : tr("Capture ideas, observations and questions as they come.")} />
+        <EmptyState guide={{ href: guideHref("thoughts"), label: tr("How thoughts work — in the tutorial") }} icon={<Lightbulb className="size-6" />} title={filter === "inbox" ? tr("Inbox zero") : tr("No thoughts yet")} body={filter === "inbox" ? tr("Every thought has a home. Capture something new above.") : tr("Capture ideas, observations and questions as they come.")} />
       ) : (
         <div className="columns-1 gap-4 sm:columns-2 xl:columns-3 [&>*]:mb-4">
           {data.notes.map((n) => (

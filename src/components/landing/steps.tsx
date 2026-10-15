@@ -13,7 +13,7 @@ const ICONS = [
 ];
 
 export function Steps() {
-  const { t } = useLanding();
+  const { t, lang } = useLanding();
   return (
     <section id="how" className="l-section scroll-mt-20" aria-labelledby="steps-title">
       <div className="l-container">
@@ -31,6 +31,9 @@ export function Steps() {
             </Reveal>
           ))}
         </ol>
+        <Reveal className="mt-12 flex justify-center">
+          <a href={`/guide?lang=${lang}`} className="l-btn l-btn-secondary">{t.guide.more}<span aria-hidden>→</span></a>
+        </Reveal>
       </div>
     </section>
   );

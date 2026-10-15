@@ -570,3 +570,30 @@ test("the tutorial is public, bilingual and covers every sidebar section", async
   await expect(page.getByRole("heading", { level: 1 })).toContainText("How it all works");
   await expect(page.getByRole("heading", { level: 3, name: "Knowledge Graph", exact: true })).toBeVisible();
 });
+
+test("the tutorial is linked from the landing page and inside the app", async ({ page }) => {
+  // Landing: under the four steps, first FAQ answer, footer.
+  await page.goto("/");
+  await expect(page.locator('#how a[href^="/guide"]')).toBeVisible();
+  await expect(page.locator('#faq a[href^="/guide"]')).toBeVisible();
+  await expect(page.locator('footer a[href^="/guide"]')).toBeVisible();
+
+  await signUp(page, "Guide Reader", `guide+${Date.now()}@nodera.test`);
+  // Finishing the dashboard tour offers the tutorial.
+  await page.getByRole("button", { name: "Start the guided tour" }).click();
+  const tour = page.getByRole("dialog", { name: "Guided tour" });
+  await expect(tour).toBeVisible();
+  await expect(tour.getByRole("link", { name: /Learn more about this section in the tutorial/ })).toHaveAttribute("href", /\/guide\?lang=en#dashboard/);
+  for (let i = 0; i < 30 && (await tour.isVisible()); i++) {
+    await tour.getByRole("button", { name: /^(Next|Got it)$/ }).click();
+  }
+  await expect(page.getByText("Tour complete!")).toBeVisible();
+  await page.getByRole("button", { name: "Later" }).click();
+
+  // Empty sections point to their part of the tutorial.
+  await page.goto("/goals");
+  await expect(page.getByRole("link", { name: /How goals work — in the tutorial/ })).toHaveAttribute("href", /\/guide\?lang=en#goals/);
+  await page.getByRole("link", { name: /How goals work/ }).click();
+  await page.waitForURL("**/guide**");
+  await expect(page.getByRole("heading", { level: 3, name: "Goals", exact: true })).toBeVisible();
+});
