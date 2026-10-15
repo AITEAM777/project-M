@@ -540,8 +540,19 @@ test("dropping a connection anywhere on a card connects to it; cards show their 
   // Write text right on the card: it's visible on the map without opening the side panel.
   await page.locator(".react-flow__node", { hasText: "Target card" }).click();
   await page.getByRole("button", { name: "Add text" }).click();
-  await page.getByLabel("Card text").fill("Line one\nLine two of my thought");
+  const card = page.locator(".react-flow__node", { hasText: "Target card" });
+  const small = (await card.boundingBox())!;
+  const long = "Line one\n\nLine two of my thought, which is long enough to need a wider card than usual\n— point A\n— point B\n— point C\n— point D\n— point E\n— point F\n— point G\n— point H\n— point I\nThe very last line";
+  await page.getByLabel("Card text").fill(long);
+  // The card grows while typing…
+  await expect.poll(async () => (await card.boundingBox())!.height).toBeGreaterThan(small.height + 150);
   await page.keyboard.press("Escape");
+  // …and afterwards shows every line (blank lines kept), wider but capped.
+  await expect(card.getByText("The very last line")).toBeVisible();
+  await expect(card.locator("p", { hasText: "point I" })).toHaveText(long);
+  const cssWidth = await card.evaluate((el) => (el as HTMLElement).offsetWidth); // unaffected by canvas zoom
+  expect(cssWidth).toBeGreaterThan(300);
+  expect(cssWidth).toBeLessThanOrEqual(402);
   await expect(page.locator(".react-flow__node", { hasText: "Line two of my thought" })).toBeVisible();
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
   await page.goto(url);

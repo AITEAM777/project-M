@@ -71,14 +71,12 @@ function InlineText({ id, text }: { id: string; text: string }) {
     el.focus();
     el.setSelectionRange(el.value.length, el.value.length);
   }, []);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [v]);
+  // The invisible copy of the text sizes the box, so the card grows in height and width as you type.
+  const box = "col-start-1 row-start-1 rounded-md px-1.5 py-1 text-[12.5px] leading-snug whitespace-pre-wrap break-words";
   return (
-    <textarea
+    <div className="mt-1.5 grid">
+      <div aria-hidden className={cn(box, "invisible")}>{v + " "}</div>
+      <textarea
       ref={ref}
       value={v}
       rows={2}
@@ -89,9 +87,10 @@ function InlineText({ id, text }: { id: string; text: string }) {
         if (e.key === "Escape" || (e.key === "Enter" && (e.metaKey || e.ctrlKey))) { e.preventDefault(); actions.finishText(id, v); }
       }}
       placeholder={tr("Write your thought…")}
-      className="nodrag nowheel mt-1.5 block w-full resize-none overflow-hidden rounded-md bg-[var(--surface-2)] px-1.5 py-1 text-[12.5px] leading-snug text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
+      className={cn(box, "nodrag nowheel block size-full min-w-0 resize-none overflow-hidden bg-[var(--surface-2)] text-[var(--text)] outline-none placeholder:text-[var(--muted)]")}
       aria-label={tr("Card text")}
-    />
+      />
+    </div>
   );
 }
 
@@ -138,7 +137,8 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
         searching && !data.match && "opacity-25",
         task?.status === "DONE" && "opacity-75",
       )}
-      style={{ width: isCircle ? 150 : 220, minHeight: isCircle ? 150 : undefined }}
+      // Cards fit their text: 220px wide by default, widening up to 400px for longer lines, then growing down.
+      style={isCircle ? { width: 150, minHeight: 150 } : { width: "max-content", minWidth: 220, maxWidth: 400 }}
     >
       {!isCircle && <div className={cn("absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full", shape === "pill" && "left-2")} style={{ background: color }} />}
       {isDiamond && <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 size-3 rotate-45 border-l border-t border-[var(--border)] bg-[var(--surface)]" />}
@@ -172,7 +172,7 @@ export const MindNodeView = memo(function MindNodeView({ id, data, selected }: N
         ) : data.description ? (
           <p
             onDoubleClick={(e) => { if (readOnly) return; e.stopPropagation(); actions.editText(id); }}
-            className="mt-1.5 line-clamp-[12] whitespace-pre-wrap break-words text-[12.5px] leading-snug text-[var(--text-2)]"
+            className="mt-1.5 whitespace-pre-wrap break-words text-[12.5px] leading-snug text-[var(--text-2)]"
             title={readOnly ? undefined : tr("Double-click to edit")}
           >
             {data.description}
