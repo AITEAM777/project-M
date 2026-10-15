@@ -29,7 +29,7 @@ export default function AssistantPage() {
   const [current, setCurrent] = useState<AiSuggestion | null>(null);
   if (!me) return <PageSkeleton />;
   if (!me.aiAvailable || !me.user.aiEnabled) {
-    return <EmptyState icon={<Sparkles className="size-6" />} title={tr("AI assistant is off")} body={!me.aiAvailable ? tr("The server has no ANTHROPIC_API_KEY configured. Everything else in Nodera works without AI.") : tr("Enable AI features in Settings to use the assistant.")} action={<Link href="/settings"><Button>{tr("Open settings")}</Button></Link>} />;
+    return <EmptyState icon={<Sparkles className="size-6" />} title={tr("AI assistant is off")} body={!me.aiAvailable ? tr("AI is temporarily unavailable. Everything else in Nodera works without it.") : tr("Enable AI features in Settings to use the assistant.")} action={<Link href="/settings"><Button>{tr("Open settings")}</Button></Link>} />;
   }
   const run = async (action: string, body: object) => {
     setBusy(action);

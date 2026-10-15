@@ -30,6 +30,7 @@ import { createMapStore, type MapStore } from "./store";
 import { decorateEdge, decorateNode, sortParentsFirst, toEdgeInputs, toFlowEdges, toFlowNodes, toNodeInputs, type ApiEdge, type ApiNode } from "./serialize";
 import { KIND_META, RELATION_META, type MindNode, type NodeKind, type Relation, type RelationEdge } from "./types";
 import { AiSummaryButton } from "./ai-summary";
+import { flowAriaLabels } from "./aria";
 import { FocusOverlay } from "./focus";
 import { PathOverlay } from "./path-view";
 import { pathToGoal } from "./path";
@@ -750,6 +751,7 @@ function Editor({ initial, onReload }: { initial: MapResponse; onReload: () => v
           defaultViewport={initial.map.viewport ?? undefined}
           fitView={!initial.map.viewport}
           fitViewOptions={{ padding: 0.2, maxZoom: 1.1 }}
+          ariaLabelConfig={flowAriaLabels()}
           connectionMode={ConnectionMode.Loose}
           connectionRadius={40}
           deleteKeyCode={null}

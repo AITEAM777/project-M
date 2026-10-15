@@ -9,7 +9,7 @@ export function Footer() {
     <footer className="border-t border-[var(--border)]">
       <div className="l-container flex flex-col items-center gap-6 py-10 md:flex-row md:justify-between">
         <a href="#top" aria-label="Nodera"><Logo size={26} /></a>
-        <nav aria-label="Footer" className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[14px] text-[var(--text-muted)]">
+        <nav aria-label={t.footer.nav} className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[14px] text-[var(--text-muted)]">
           <a href={`/guide?lang=${lang}`} className="font-medium text-[var(--text)] hover:underline">{t.guide.footer}</a>
           {links.map(([href, label]) => <a key={label} href={href} className="hover:text-[var(--text)]">{label}</a>)}
         </nav>

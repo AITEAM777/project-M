@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { MarkerType } from "@xyflow/react";
 import type { EdgeInput, NodeInput } from "@/lib/validation";
 import { RELATION_META, type Linked, type MindNode, type MindNodeData, type NodeKind, type Relation, type RelationEdge } from "./types";
@@ -78,6 +79,7 @@ export function decorateEdge(e: RelationEdge, hidden: boolean, animate: boolean)
   const marker = { type: MarkerType.ArrowClosed, color: meta.color, width: 16, height: 16 };
   const out: RelationEdge = {
     ...e,
+    ariaLabel: tr("Connection: {type}", { type: meta.label }),
     hidden,
     animated: animate && !!meta.animated,
     markerEnd: e.data?.relation === "RELATED_TO" && !e.data?.bidirectional ? undefined : marker,

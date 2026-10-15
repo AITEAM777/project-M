@@ -89,7 +89,7 @@ const uk = {
     ],
   },
   cta: { titleA: "Почніть думати ", titleHi: "ясніше", titleB: ".", sub: "Перша нотатка — за 10 секунд.", button: "Створити акаунт" },
-  footer: { about: "Про нас", privacy: "Конфіденційність", terms: "Умови", contact: "Контакти" },
+  footer: { nav: "Посилання внизу сторінки", about: "Про нас", privacy: "Конфіденційність", terms: "Умови", contact: "Контакти" },
   guide: {
     more: "Детальніше: як усе пов'язано",
     footer: "Туторіал",
@@ -192,7 +192,7 @@ const en: Copy = {
     ],
   },
   cta: { titleA: "Start thinking ", titleHi: "clearer", titleB: ".", sub: "Your first note in 10 seconds.", button: "Create account" },
-  footer: { about: "About", privacy: "Privacy", terms: "Terms", contact: "Contact" },
+  footer: { nav: "Footer", about: "About", privacy: "Privacy", terms: "Terms", contact: "Contact" },
   guide: {
     more: "Learn more: how it all connects",
     footer: "Tutorial",

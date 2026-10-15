@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, Card, EmptyState, PageSkeleton, Progress, ProgressRing, Tabs } from "@/components/ui/misc";
 import { PageHeader } from "@/components/shared/page-header";
 import { GOAL_STATUS_LABEL } from "@/components/forms/goal-form";
-import { PRIORITY_COLOR } from "@/components/forms/options";
+import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/components/forms/options";
 
 export default function GoalsPage() {
   const { openCreate } = useUI();
@@ -37,21 +37,21 @@ export default function GoalsPage() {
                           <p className="font-semibold leading-snug">{g.title}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             <Badge>{GOAL_STATUS_LABEL[g.status]}</Badge>
-                            <Badge color={PRIORITY_COLOR[g.priority]}>{g.priority.toLowerCase()}</Badge>
+                            <Badge color={PRIORITY_COLOR[g.priority]}>{PRIORITY_LABEL[g.priority]}</Badge>
                             {g.category && <Badge>{g.category}</Badge>}
-                            {g.targetDate && <span className="text-xs text-muted">by {relDay(g.targetDate)}</span>}
+                            {g.targetDate && <span className="text-xs text-muted">{tr("by {date}", { date: relDay(g.targetDate) })}</span>}
                           </div>
                         </div>
                       </div>
                       {g.milestones.length > 0 && (
                         <ul className="mt-3 space-y-1 text-sm">
                           {g.milestones.slice(0, 4).map((m) => <li key={m.id} className={m.done ? "text-muted line-through" : ""}>{m.done ? "✓" : "○"} {m.title}</li>)}
-                          {g.milestones.length > 4 && <li className="text-xs text-muted">+{g.milestones.length - 4} more</li>}
+                          {g.milestones.length > 4 && <li className="text-xs text-muted">{tr("+{n} more", { n: g.milestones.length - 4 })}</li>}
                         </ul>
                       )}
                       <div className="mt-3 flex items-center gap-2 text-xs text-muted">
                         <Progress value={g.taskCount ? (g.doneTaskCount / g.taskCount) * 100 : 0} size="sm" />
-                        <span className="whitespace-nowrap tabular">{g.doneTaskCount}/{g.taskCount} tasks</span>
+                        <span className="whitespace-nowrap tabular">{tr("{done}/{total} tasks", { done: g.doneTaskCount, total: g.taskCount })}</span>
                       </div>
                     </Card>
                   </Link>

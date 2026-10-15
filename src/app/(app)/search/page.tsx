@@ -1,4 +1,5 @@
 "use client";
+import { TYPE_LABEL } from "@/lib/entity-labels";
 import { tr } from "@/lib/i18n";
 import Link from "next/link";
 import { Suspense, useState } from "react";
@@ -42,7 +43,7 @@ function SearchInner() {
         <Field label={tr("Keywords")} className="md:col-span-2">
           <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" /><Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder={tr("e.g. startup")} /></div>
         </Field>
-        <Field label={tr("Tag")}><Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="#finance" /></Field>
+        <Field label={tr("Tag")}><Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder={tr("#finance")} /></Field>
         <Field label={tr("Type")}>
           <Select value={types} onChange={(e) => setTypes(e.target.value)}>
             <option value="">{tr("All types")}</option><option value="note">{tr("Notes")}</option><option value="thought">{tr("Thoughts")}</option><option value="node">{tr("Map nodes")}</option><option value="task">{tr("Tasks")}</option>
@@ -66,7 +67,7 @@ function SearchInner() {
         <Card className="divide-y divide-border overflow-hidden">
           {data.results.map((r) => (
             <Link key={`${r.type}:${r.id}`} href={r.href} className="flex items-start gap-3 px-4 py-3 hover:bg-surface-2">
-              <Badge className="mt-0.5 capitalize">{r.type}</Badge>
+              <Badge className="mt-0.5">{tr(TYPE_LABEL[r.type] ?? r.type)}</Badge>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{r.title}</span>
                 {r.snippet && <span className="block truncate text-sm text-muted">{r.snippet}</span>}

@@ -6,7 +6,7 @@ import { invalidate, patch } from "@/lib/client/api";
 import { toast, useUI } from "@/lib/client/store";
 import { isOverdue, relDay } from "@/lib/client/format";
 import type { Task, TaskStatus } from "@/lib/client/types";
-import { PRIORITY_COLOR } from "@/components/forms/options";
+import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/components/forms/options";
 import { cn } from "@/lib/utils";
 
 const COLS: { status: TaskStatus; label: string; color: string }[] = translated([
@@ -54,7 +54,7 @@ export function TaskBoard({ tasks, onChanged, showProject = true }: { tasks: Tas
                   <button className="w-full text-left" onClick={() => openTask(t.id)}>
                     <p className={cn("text-sm font-medium leading-snug", c.status === "DONE" && "text-muted line-through")}>{t.title}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted">
-                      <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full" style={{ background: PRIORITY_COLOR[t.priority] }} />{t.priority.toLowerCase()}</span>
+                      <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full" style={{ background: PRIORITY_COLOR[t.priority] }} />{PRIORITY_LABEL[t.priority]}</span>
                       {t.dueDate && <span className={cn(isOverdue(t.dueDate, t.status) && "font-medium text-danger")}>{relDay(t.dueDate)}</span>}
                       {showProject && t.project && <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full" style={{ background: t.project.color }} />{t.project.title}</span>}
                       {!!t.dependsOn?.some((d) => d.dependsOn.status !== "DONE") && <span className="text-warning">blocked</span>}

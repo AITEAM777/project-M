@@ -15,7 +15,7 @@ import { Checkbox, Input, Select } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge, Card, MenuItem, MenuSeparator, PageSkeleton, Popover, ProgressRing } from "@/components/ui/misc";
 import { GoalForm, GOAL_STATUS_LABEL } from "@/components/forms/goal-form";
-import { PRIORITY_COLOR } from "@/components/forms/options";
+import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/components/forms/options";
 import { TaskRow } from "@/components/tasks/task-row";
 import { QuickAddTask } from "@/components/tasks/quick-add";
 import { PlaceOnMap } from "@/components/shared/place-on-map";
@@ -64,7 +64,7 @@ export default function GoalPage({ params }: { params: Promise<{ id: string }> }
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{g.title}</h1>
             <Badge>{GOAL_STATUS_LABEL[g.status]}</Badge>
-            <Badge color={PRIORITY_COLOR[g.priority]}>{g.priority.toLowerCase()} priority</Badge>
+            <Badge color={PRIORITY_COLOR[g.priority]}>{tr("Priority: {p}", { p: PRIORITY_LABEL[g.priority] })}</Badge>
             {g.category && <Badge>{g.category}</Badge>}
           </div>
           {g.description && <p className="mt-1.5 max-w-3xl whitespace-pre-line text-sm text-text-2">{g.description}</p>}

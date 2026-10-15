@@ -1,5 +1,6 @@
 "use client";
 import { tr, translated } from "@/lib/i18n";
+import { flowAriaLabels } from "@/components/canvas/aria";
 import Link from "next/link";
 import { memo, useMemo, useState } from "react";
 import { Background, BackgroundVariant, Controls, Handle, Position, ReactFlow, ReactFlowProvider, type Edge, type Node, type NodeProps } from "@xyflow/react";
@@ -97,7 +98,7 @@ export default function GraphPage() {
   })), [filtered, positions, neighbours, ql, sel]);
   const rfEdges: Edge[] = useMemo(() => (filtered?.edges ?? []).map((e) => {
     const on = !neighbours || (neighbours.has(e.source) && neighbours.has(e.target) && (e.source === focus || e.target === focus));
-    return { id: e.id, source: e.source, target: e.target, style: { stroke: RELATION_META[e.relation]?.color ?? "#94a3b8", strokeWidth: on && neighbours ? 2 : 1.1, opacity: on ? (e.relation === "PART_OF" ? 0.45 : 0.85) : 0.06 }, animated: !!neighbours && on && e.relation !== "PART_OF" };
+    return { id: e.id, source: e.source, target: e.target, ariaLabel: tr("Connection: {type}", { type: RELATION_META[e.relation]?.label ?? "" }), style: { stroke: RELATION_META[e.relation]?.color ?? "#94a3b8", strokeWidth: on && neighbours ? 2 : 1.1, opacity: on ? (e.relation === "PART_OF" ? 0.45 : 0.85) : 0.06 }, animated: !!neighbours && on && e.relation !== "PART_OF" };
   }), [filtered, neighbours, focus]);
 
   const selected = data?.nodes.find((n) => n.id === sel);
@@ -108,7 +109,7 @@ export default function GraphPage() {
     <div className="absolute inset-0">
       {!filtered ? <div className="grid h-full place-items-center"><Spinner className="size-7" /></div> : (
         <ReactFlowProvider>
-          <ReactFlow nodes={rfNodes} edges={rfEdges} nodeTypes={nodeTypes} fitView minZoom={0.05} maxZoom={2} nodesConnectable={false} nodesDraggable elementsSelectable
+          <ReactFlow ariaLabelConfig={flowAriaLabels()} nodes={rfNodes} edges={rfEdges} nodeTypes={nodeTypes} fitView minZoom={0.05} maxZoom={2} nodesConnectable={false} nodesDraggable elementsSelectable
             onNodeMouseEnter={(_, n) => setHover(n.id)} onNodeMouseLeave={() => setHover(null)} onNodeClick={(_, n) => setSel(n.id)} onPaneClick={() => setSel(null)}
             onlyRenderVisibleElements proOptions={{ hideAttribution: true }}>
             <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="var(--canvas-dot)" />

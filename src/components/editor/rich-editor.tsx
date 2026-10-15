@@ -37,7 +37,7 @@ export function RichEditor({ noteId, content, onChange, onUploaded }: { noteId: 
     ],
     content: (content as object) ?? "",
     editorProps: {
-      attributes: { class: "prose-nodera min-h-[50vh] pb-24", "aria-label": "Note content" },
+      attributes: { class: "prose-nodera min-h-[50vh] pb-24", "aria-label": tr("Note content") },
       handleClick: (_view, _pos, event) => {
         const a = (event.target as HTMLElement).closest("a");
         if (!a) return false;

@@ -73,7 +73,7 @@ function Settings() {
           <LanguageSwitcher />
         </Card>
         <Card className="p-5">
-          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("AI assistant")}</h2>{!me.aiAvailable && <Badge>{tr("Not configured on this server")}</Badge>}</div>
+          <div className="mb-1 flex items-center gap-2"><h2 className="font-semibold">{tr("AI assistant")}</h2>{!me.aiAvailable && <Badge>{tr("Temporarily unavailable")}</Badge>}</div>
           <p className="mb-3 text-sm text-muted">{tr("The assistant only reads the workspace data needed for the action you trigger, never changes anything without your confirmation, and clearly marks its suggestions.")}</p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" className="accent-[var(--accent)]" checked={u.aiEnabled} disabled={!me.aiAvailable} onChange={(e) => save({ aiEnabled: e.target.checked }, e.target.checked ? "AI features enabled" : "AI features disabled")} />

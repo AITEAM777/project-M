@@ -25,7 +25,7 @@ function UsageBar({ label, used, max }: { label: string; used: number; max: numb
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate font-display text-[13px] font-semibold text-text-2">{label}</span>
+        <span className="font-display text-[13px] font-semibold leading-tight text-text-2">{label}</span>
         <span className={cn("shrink-0 font-display text-[13px] font-semibold tabular", full && "text-warning")}>{used} / {max ?? "∞"}</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3">

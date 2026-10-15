@@ -1,4 +1,5 @@
 "use client";
+import { TYPE_LABEL } from "@/lib/entity-labels";
 import { trActivity } from "@/lib/i18n/activity";
 import { fmt } from "@/lib/client/format";
 import { tr, translated } from "@/lib/i18n";
@@ -42,7 +43,7 @@ export default function TimelinePage() {
                   {newDay && <p className="-ml-5 mb-2 mt-4 first:mt-0 text-xs font-semibold uppercase tracking-wide text-muted">{fmt(new Date(a.createdAt), "EEEE, d MMMM yyyy")}</p>}
                   <span className={cn("absolute -left-[5px] mt-1.5 size-2.5 rounded-full ring-4 ring-surface", a.action === "completed" ? "bg-success" : a.action === "deleted" ? "bg-danger" : a.action === "created" ? "bg-accent" : "bg-border-strong")} />
                   <p className="text-sm">{a.entityType === "ai" && <Sparkles className="mr-1 inline size-3 text-accent" />}{trActivity(a.summary)}</p>
-                  <p className="text-xs text-muted">{fmt(new Date(a.createdAt), "HH:mm")} · {a.entityType}</p>
+                  <p className="text-xs text-muted">{fmt(new Date(a.createdAt), "HH:mm")} · {tr(TYPE_LABEL[a.entityType] ?? a.entityType)}</p>
                 </li>
               );
             })}
