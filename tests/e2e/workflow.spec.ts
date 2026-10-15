@@ -559,3 +559,14 @@ test("dropping a connection anywhere on a card connects to it; cards show their 
   await expect(page.locator(".react-flow__node", { hasText: "Line two of my thought" })).toBeVisible();
   await expect(page.locator(".react-flow__edge")).toHaveCount(before + 1);
 });
+
+test("the tutorial is public, bilingual and covers every sidebar section", async ({ page }) => {
+  await page.goto("/guide?lang=uk");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Як усе працює");
+  for (const name of ["Дашборд", "Мої думки", "Нотатки", "Карти думок", "Проєкти", "Задачі", "Цілі", "Календар", "Звички", "Граф знань", "Хронологія", "Папки"]) {
+    await expect(page.getByRole("heading", { level: 3, name, exact: true })).toBeVisible();
+  }
+  await page.getByRole("radio", { name: "EN" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("How it all works");
+  await expect(page.getByRole("heading", { level: 3, name: "Knowledge Graph", exact: true })).toBeVisible();
+});

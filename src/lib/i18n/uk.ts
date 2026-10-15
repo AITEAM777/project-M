@@ -1291,4 +1291,5 @@ export const uk: Record<string, string> = {
  "Card text": "Текст картки",
  "Double-click to edit": "Двічі клацніть, щоб змінити",
  "Add text": "Додати текст",
+ "How it works": "Як це працює",
 };

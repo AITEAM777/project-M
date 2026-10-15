@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminHost } from "@/lib/admin-host";
 
-const PUBLIC = ["/login", "/register", "/forgot"];
+const PUBLIC = ["/login", "/register", "/forgot", "/guide"];
 
 const notFound = (req: NextRequest) => NextResponse.rewrite(new URL("/__not-found", req.url), { status: 404 });
 

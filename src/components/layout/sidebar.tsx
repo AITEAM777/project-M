@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   Archive, CalendarDays, CheckSquare, ChevronDown, ChevronRight, FileText, FolderPlus, FolderTree, Goal, History,
-  LayoutDashboard, Lightbulb, MoreHorizontal, Network, Pencil, Plus, Repeat, Settings, Sparkles, Star, Trash2, Waypoints, Workflow,
+  BookOpen, LayoutDashboard, Lightbulb, MoreHorizontal, Network, Pencil, Plus, Repeat, Settings, Sparkles, Star, Trash2, Waypoints, Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { del, invalidate, patch, post, useApi } from "@/lib/client/api";
@@ -60,6 +60,9 @@ export function Sidebar({ workspaces, onWorkspacesChange, className }: { workspa
       <Folders />
       <SidebarPlan />
       <div className="border-t border-border p-2">
+        <Link href="/guide" className="flex items-center gap-2.5 h-8 px-2.5 rounded-lg text-[13.5px] text-text-2 hover:bg-surface-2">
+          <BookOpen className="size-[17px]" strokeWidth={1.8} />{" "}{tr("How it works")}
+        </Link>
         <Link href="/settings" className={cn("flex items-center gap-2.5 h-8 px-2.5 rounded-lg text-[13.5px]", pathname === "/settings" ? "bg-accent-soft text-accent font-medium" : "text-text-2 hover:bg-surface-2")}>
           <Settings className="size-[17px]" strokeWidth={1.8} />{" "}{tr("Settings")}
         </Link>
